@@ -33,8 +33,9 @@ def main():
    args = parser.parse_args()
 
    # read input file
-   data = jbtiff.tiff_file(open(args.input, 'r'))
-
+   tiff = jbtiff.tiff_file(open(args.input, 'r'))
+   # write output file
+   tiff.write(open(args.output, 'w'))
    return
 
 # main entry point
