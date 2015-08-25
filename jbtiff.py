@@ -20,6 +20,54 @@
 
 import struct
 
+class value_range():
+
+   # initialize as blank sequence
+   def __init__(self):
+      self.data = []
+      return
+
+   # add range of numbers, both inclusive
+   def add_range(self, lo, hi):
+      assert lo <= hi
+      # find insertion point
+      index = len(self.data)
+      for i, (a,b) in enumerate(self.data):
+         if lo <= b:
+            index = i
+            break
+      # insert as new range
+      self.data.insert(index, (lo,hi))
+      # now flatten the existing range
+      self.flatten()
+      return
+
+   # flatten sequence of ranges into shortest expression
+   def flatten(self):
+      tmp = []
+      span = None
+      for a,b in self.data:
+         # nothing there yet
+         if not span:
+            span = (a,b)
+            continue
+         # mergeable spans
+         if a <= span[1]+1 and b >= span[0]-1:
+            span = (min(a,span[0]), max(b,span[1]))
+            continue
+         # un-mergeable spans
+         tmp.append(span)
+         span = (a,b)
+      # write last entry
+      tmp.append(span)
+      # replace table with flattened version
+      self.data = tmp
+      return
+
+   # display overall range used
+   def display(self):
+      return ', '.join(['%d-%d' % (a,b) for a,b in self.data])
+
 class tiff_file():
 
    ## constants
@@ -150,6 +198,8 @@ class tiff_file():
 
    # initialize class from stream
    def __init__(self, fid):
+      # keep track of range of bytes read
+      spans = value_range()
       # determine byte order
       tmp = fid.read(2)
       if tmp == 'II':
@@ -161,6 +211,8 @@ class tiff_file():
       # determine TIFF identifier
       tmp = self.read_word(fid, 2, False, self.little_endian)
       assert tmp == 42
+      # add header bytes
+      spans.add_range(0, 8-1)
       # initialize IFD table
       self.IFDs = []
       # read all IFDs in file
@@ -173,6 +225,8 @@ class tiff_file():
          # read number of IFD entries
          fid.seek(ifd_offset)
          entry_count = self.read_word(fid, 2, False, self.little_endian)
+         # add IFD bytes
+         spans.add_range(ifd_offset, ifd_offset + 2 + entry_count*12 + 4 - 1)
          # read IFD entries
          IFD = []
          for i in range(entry_count):
@@ -186,6 +240,8 @@ class tiff_file():
             if self.field_size[field_type] * value_count > 4:
                value_offset = self.read_word(fid, 4, False, self.little_endian)
                fid.seek(value_offset)
+               # add value bytes
+               spans.add_range(value_offset, value_offset + self.field_size[field_type] * value_count - 1)
             # read value(s)
             if field_type == 1: # BYTE
                values = [self.read_word(fid, 1, False, self.little_endian) for j in range(value_count)]
@@ -222,6 +278,8 @@ class tiff_file():
          self.IFDs.append(IFD)
          # make sure we're in the correct position to read next offset
          fid.seek(ifd_offset + 2 + entry_count*12)
+      # display range of bytes used
+      print "Bytes read:", spans.display()
       return
 
    # write data to stream
