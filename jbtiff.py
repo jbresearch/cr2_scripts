@@ -175,7 +175,10 @@ class tiff_file():
             if field_type == 1: # BYTE
                values = [self.read_word(fid, 1, False, self.little_endian) for j in range(value_count)]
             elif field_type == 2: # ASCII
-               values = fid.read(value_count).split('\0')
+               tmp = fid.read(value_count)
+               if tmp[-1] == '\0':
+                  tmp = tmp[:-1]
+               values = tmp.split('\0')
             elif field_type == 3: # SHORT
                values = [self.read_word(fid, 2, False, self.little_endian) for j in range(value_count)]
             elif field_type == 4: # LONG
