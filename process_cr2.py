@@ -18,6 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+import sys
 import argparse
 import jbtiff
 
@@ -30,10 +31,15 @@ def main():
                      help="input raw file to process")
    parser.add_argument("-o", "--output", required=True,
                      help="output processed raw file")
+   parser.add_argument("-d", "--display", action="store_true", default=False,
+                     help="print read data")
    args = parser.parse_args()
 
    # read input file
    tiff = jbtiff.tiff_file(open(args.input, 'r'))
+   # print data as needed
+   if args.display:
+      tiff.display(sys.stdout)
    # write output file
    tiff.write(open(args.output, 'w'))
    return
