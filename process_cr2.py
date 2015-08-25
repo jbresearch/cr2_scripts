@@ -32,6 +32,9 @@ def main():
                      help="output processed raw file")
    args = parser.parse_args()
 
+   # read input file
+   data = jbtiff.tiff_file(open(args.input, 'r'))
+
    return
 
 # main entry point
