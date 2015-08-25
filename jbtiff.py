@@ -215,7 +215,7 @@ class tiff_file():
       spans.add_range(0, 8-1)
       # initialize IFD table
       self.data = []
-      # read all IFDs in file
+      # read all IFDs and associated strips in file
       while True:
          # get offset to IFD
          ifd_offset = self.read_word(fid, 4, False, self.little_endian)
@@ -274,8 +274,17 @@ class tiff_file():
                values = [self.read_float(fid, 8, self.little_endian) for j in range(value_count)]
             # store entry in IFD table
             IFD[tag] = (field_type, values)
-         # store IFD in table
-         self.data.append(IFD)
+         # read data strips if present
+         strips = []
+         if 273 in IFD:
+            assert 279 in IFD
+            assert len(IFD[273][1]) == len(IFD[279][1])
+            for strip_offset, strip_length in zip(IFD[273][1], IFD[279][1]):
+               fid.seek(strip_offset)
+               strips.append(fid.read(strip_length))
+               spans.add_range(strip_offset, strip_offset + strip_length - 1)
+         # store IFD and data strips in table
+         self.data.append((IFD, strips))
          # make sure we're in the correct position to read next offset
          fid.seek(ifd_offset + 2 + entry_count*12)
       # display range of bytes used
@@ -294,8 +303,8 @@ class tiff_file():
       # initialize pointers to offset and to next free space
       offset_ptr = 4
       free_ptr = 8
-      # write all IFDs in file
-      for IFD in self.data:
+      # write all IFDs and associated strips in file
+      for IFD, strips in self.data:
          # write offset to this IFD
          ifd_offset = free_ptr
          fid.seek(offset_ptr)
@@ -379,7 +388,7 @@ class tiff_file():
       else:
          print >> fid, "Byte order: big-endian"
       # display all IFDs in file
-      for k, IFD in enumerate(self.data):
+      for k, (IFD, strips) in enumerate(self.data):
          print >> fid, "IFD#%d:" % k
          # display IFD entries
          for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
