@@ -305,6 +305,24 @@ class tiff_file():
       free_ptr = 8
       # write all IFDs and associated strips in file
       for IFD, strips in self.data:
+         # write data strips if present
+         if strips:
+            assert 273 in IFD
+            assert 279 in IFD
+            assert len(IFD[273][1]) == len(strips)
+            assert len(IFD[279][1]) == len(strips)
+            for i, strip in enumerate(strips):
+               # determine strip details
+               strip_offset = free_ptr
+               strip_length = len(strip)
+               # check and update IFD data
+               assert IFD[279][1][i] == strip_length
+               IFD[273][1][i] = strip_offset
+               # write data to file
+               fid.seek(strip_offset)
+               fid.write(strip)
+               # update free pointer
+               free_ptr += strip_length
          # write offset to this IFD
          ifd_offset = free_ptr
          fid.seek(offset_ptr)
