@@ -201,6 +201,70 @@ class tiff_file():
 
    ## class methods
 
+   # read TIFF directory, starting at given offset
+   def read_directory(self, fid, ifd_offset, spans):
+      # read number of IFD entries
+      fid.seek(ifd_offset)
+      entry_count = self.read_word(fid, 2, False, self.little_endian)
+      # add IFD bytes
+      spans.add_range(ifd_offset, ifd_offset + 2 + entry_count*12 + 4 - 1)
+      # read IFD entries
+      IFD = {}
+      for i in range(entry_count):
+         # make sure we're in the correct position
+         fid.seek(ifd_offset + 2 + i*12)
+         # get IFD entry information
+         tag = self.read_word(fid, 2, False, self.little_endian)
+         field_type = self.read_word(fid, 2, False, self.little_endian)
+         value_count = self.read_word(fid, 4, False, self.little_endian)
+         # check if the value fits here or if we need offset
+         if self.field_size[field_type] * value_count > 4:
+            value_offset = self.read_word(fid, 4, False, self.little_endian)
+            fid.seek(value_offset)
+            # add value bytes
+            spans.add_range(value_offset, value_offset + self.field_size[field_type] * value_count - 1)
+         # read value(s)
+         if field_type == 1: # BYTE
+            values = [self.read_word(fid, 1, False, self.little_endian) for j in range(value_count)]
+         elif field_type == 2: # ASCII
+            tmp = fid.read(value_count)
+            if tmp[-1] == '\0':
+               tmp = tmp[:-1]
+            values = tmp.split('\0')
+         elif field_type == 3: # SHORT
+            values = [self.read_word(fid, 2, False, self.little_endian) for j in range(value_count)]
+         elif field_type == 4: # LONG
+            values = [self.read_word(fid, 4, False, self.little_endian) for j in range(value_count)]
+         elif field_type == 5: # RATIONAL
+            values = [(self.read_word(fid, 4, False, self.little_endian), \
+                       self.read_word(fid, 4, False, self.little_endian)) for j in range(value_count)]
+         elif field_type == 6: # SBYTE
+            values = [self.read_word(fid, 1, True, self.little_endian) for j in range(value_count)]
+         elif field_type == 7: # UNDEFINED
+            values = [self.read_word(fid, 1, False, self.little_endian) for j in range(value_count)]
+         elif field_type == 8: # SSHORT
+            values = [self.read_word(fid, 2, True, self.little_endian) for j in range(value_count)]
+         elif field_type == 9: # SLONG
+            values = [self.read_word(fid, 4, True, self.little_endian) for j in range(value_count)]
+         elif field_type == 10: # SRATIONAL
+            values = [(self.read_word(fid, 4, True, self.little_endian), \
+                       self.read_word(fid, 4, True, self.little_endian)) for j in range(value_count)]
+         elif field_type == 11: # FLOAT
+            values = [self.read_float(fid, 4, self.little_endian) for j in range(value_count)]
+         elif field_type == 12: # DOUBLE
+            values = [self.read_float(fid, 8, self.little_endian) for j in range(value_count)]
+         # store entry in IFD table
+         IFD[tag] = (field_type, values)
+      # recursively read sub directories as needed
+      for tag in [34665, 34853]: # EXIF, GPS
+         if tag in IFD:
+            field_type, values = IFD[tag]
+            assert len(values) == 1
+            tmp = self.read_directory(fid, values[0], spans)
+            # replace values with subdirectory
+            IFD[tag] = (field_type, tmp)
+      return IFD
+
    # initialize class from stream
    def __init__(self, fid):
       # keep track of range of bytes read
@@ -227,58 +291,8 @@ class tiff_file():
          # check if this was the last one
          if ifd_offset == 0:
             break
-         # read number of IFD entries
-         fid.seek(ifd_offset)
-         entry_count = self.read_word(fid, 2, False, self.little_endian)
-         # add IFD bytes
-         spans.add_range(ifd_offset, ifd_offset + 2 + entry_count*12 + 4 - 1)
-         # read IFD entries
-         IFD = {}
-         for i in range(entry_count):
-            # make sure we're in the correct position
-            fid.seek(ifd_offset + 2 + i*12)
-            # get IFD entry information
-            tag = self.read_word(fid, 2, False, self.little_endian)
-            field_type = self.read_word(fid, 2, False, self.little_endian)
-            value_count = self.read_word(fid, 4, False, self.little_endian)
-            # check if the value fits here or if we need offset
-            if self.field_size[field_type] * value_count > 4:
-               value_offset = self.read_word(fid, 4, False, self.little_endian)
-               fid.seek(value_offset)
-               # add value bytes
-               spans.add_range(value_offset, value_offset + self.field_size[field_type] * value_count - 1)
-            # read value(s)
-            if field_type == 1: # BYTE
-               values = [self.read_word(fid, 1, False, self.little_endian) for j in range(value_count)]
-            elif field_type == 2: # ASCII
-               tmp = fid.read(value_count)
-               if tmp[-1] == '\0':
-                  tmp = tmp[:-1]
-               values = tmp.split('\0')
-            elif field_type == 3: # SHORT
-               values = [self.read_word(fid, 2, False, self.little_endian) for j in range(value_count)]
-            elif field_type == 4: # LONG
-               values = [self.read_word(fid, 4, False, self.little_endian) for j in range(value_count)]
-            elif field_type == 5: # RATIONAL
-               values = [(self.read_word(fid, 4, False, self.little_endian), \
-                          self.read_word(fid, 4, False, self.little_endian)) for j in range(value_count)]
-            elif field_type == 6: # SBYTE
-               values = [self.read_word(fid, 1, True, self.little_endian) for j in range(value_count)]
-            elif field_type == 7: # UNDEFINED
-               values = [self.read_word(fid, 1, False, self.little_endian) for j in range(value_count)]
-            elif field_type == 8: # SSHORT
-               values = [self.read_word(fid, 2, True, self.little_endian) for j in range(value_count)]
-            elif field_type == 9: # SLONG
-               values = [self.read_word(fid, 4, True, self.little_endian) for j in range(value_count)]
-            elif field_type == 10: # SRATIONAL
-               values = [(self.read_word(fid, 4, True, self.little_endian), \
-                          self.read_word(fid, 4, True, self.little_endian)) for j in range(value_count)]
-            elif field_type == 11: # FLOAT
-               values = [self.read_float(fid, 4, self.little_endian) for j in range(value_count)]
-            elif field_type == 12: # DOUBLE
-               values = [self.read_float(fid, 8, self.little_endian) for j in range(value_count)]
-            # store entry in IFD table
-            IFD[tag] = (field_type, values)
+         # read TIFF directory
+         IFD = self.read_directory(fid, ifd_offset, spans)
          # read data strips if present
          strips = []
          if 273 in IFD:
@@ -291,10 +305,88 @@ class tiff_file():
          # store IFD and data strips in table
          self.data.append((IFD, strips))
          # make sure we're in the correct position to read next offset
-         fid.seek(ifd_offset + 2 + entry_count*12)
+         fid.seek(ifd_offset + 2 + len(IFD)*12)
       # display range of bytes used
       print "Bytes read:", spans.display()
       return
+
+   # write TIFF directory, starting at given offset
+   def write_directory(self, IFD, fid, ifd_offset):
+      # write number of IFD entries
+      fid.seek(ifd_offset)
+      entry_count = len(IFD)
+      self.write_word(entry_count, fid, 2, False, self.little_endian)
+      # update pointer to offset and to next free space
+      offset_ptr = ifd_offset + 2 + entry_count*12
+      free_ptr = self.align(offset_ptr + 4)
+      # write any subdirectories present
+      for tag in [34665, 34853]: # EXIF, GPS
+         if tag in IFD:
+            field_type, values = IFD[tag]
+            sub_ifd_offset = free_ptr
+            sub_offset_ptr, free_ptr = self.write_directory(values, fid, sub_ifd_offset)
+            # replace value with offset for this subdirectory
+            IFD[tag] = (field_type, [sub_ifd_offset])
+      # write IFD entries
+      for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
+         # make sure we're in the correct position
+         fid.seek(ifd_offset + 2 + i*12)
+         # write IFD entry information
+         self.write_word(tag, fid, 2, False, self.little_endian)
+         self.write_word(field_type, fid, 2, False, self.little_endian)
+         # determine count
+         if field_type == 2: # ASCII
+            value_count = sum([len(x)+1 for x in values])
+         else:
+            value_count = len(values)
+         self.write_word(value_count, fid, 4, False, self.little_endian)
+         # check if the value fits here or if we need offset
+         if self.field_size[field_type] * value_count > 4:
+            value_offset = free_ptr
+            self.write_word(value_offset, fid, 4, False, self.little_endian)
+            fid.seek(value_offset)
+            free_ptr = self.align(free_ptr + self.field_size[field_type] * value_count)
+         # write value(s)
+         if field_type == 1: # BYTE
+            for value in values:
+               self.write_word(value, fid, 1, False, self.little_endian)
+         elif field_type == 2: # ASCII
+            for value in values:
+               fid.write(value)
+               self.write_word(0, fid, 1, False, self.little_endian)
+         elif field_type == 3: # SHORT
+            for value in values:
+               self.write_word(value, fid, 2, False, self.little_endian)
+         elif field_type == 4: # LONG
+            for value in values:
+               self.write_word(value, fid, 4, False, self.little_endian)
+         elif field_type == 5: # RATIONAL
+            for value in values:
+               self.write_word(value[0], fid, 4, False, self.little_endian)
+               self.write_word(value[1], fid, 4, False, self.little_endian)
+         elif field_type == 6: # SBYTE
+            for value in values:
+               self.write_word(value, fid, 1, True, self.little_endian)
+         elif field_type == 7: # UNDEFINED
+            for value in values:
+               self.write_word(value, fid, 1, False, self.little_endian)
+         elif field_type == 8: # SSHORT
+            for value in values:
+               self.write_word(value, fid, 2, True, self.little_endian)
+         elif field_type == 9: # SLONG
+            for value in values:
+               self.write_word(value, fid, 4, True, self.little_endian)
+         elif field_type == 10: # SRATIONAL
+            for value in values:
+               self.write_word(value[0], fid, 4, True, self.little_endian)
+               self.write_word(value[1], fid, 4, True, self.little_endian)
+         elif field_type == 11: # FLOAT
+            for value in values:
+               self.write_float(value, fid, 4, self.little_endian)
+         elif field_type == 12: # DOUBLE
+            for value in values:
+               self.write_float(value, fid, 8, self.little_endian)
+      return offset_ptr, free_ptr
 
    # write data to stream
    def write(self, fid):
@@ -332,72 +424,8 @@ class tiff_file():
          ifd_offset = free_ptr
          fid.seek(offset_ptr)
          self.write_word(ifd_offset, fid, 4, False, self.little_endian)
-         # write number of IFD entries
-         fid.seek(ifd_offset)
-         entry_count = len(IFD)
-         self.write_word(entry_count, fid, 2, False, self.little_endian)
-         # update pointer to offset and to next free space
-         offset_ptr = ifd_offset + 2 + entry_count*12
-         free_ptr =  self.align(offset_ptr + 4)
-         # write IFD entries
-         for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
-            # make sure we're in the correct position
-            fid.seek(ifd_offset + 2 + i*12)
-            # write IFD entry information
-            self.write_word(tag, fid, 2, False, self.little_endian)
-            self.write_word(field_type, fid, 2, False, self.little_endian)
-            # determine count
-            if field_type == 2: # ASCII
-               value_count = sum([len(x)+1 for x in values])
-            else:
-               value_count = len(values)
-            self.write_word(value_count, fid, 4, False, self.little_endian)
-            # check if the value fits here or if we need offset
-            if self.field_size[field_type] * value_count > 4:
-               value_offset = free_ptr
-               self.write_word(value_offset, fid, 4, False, self.little_endian)
-               fid.seek(value_offset)
-               free_ptr = self.align(free_ptr + self.field_size[field_type] * value_count)
-            # write value(s)
-            if field_type == 1: # BYTE
-               for value in values:
-                  self.write_word(value, fid, 1, False, self.little_endian)
-            elif field_type == 2: # ASCII
-               for value in values:
-                  fid.write(value)
-                  self.write_word(0, fid, 1, False, self.little_endian)
-            elif field_type == 3: # SHORT
-               for value in values:
-                  self.write_word(value, fid, 2, False, self.little_endian)
-            elif field_type == 4: # LONG
-               for value in values:
-                  self.write_word(value, fid, 4, False, self.little_endian)
-            elif field_type == 5: # RATIONAL
-               for value in values:
-                  self.write_word(value[0], fid, 4, False, self.little_endian)
-                  self.write_word(value[1], fid, 4, False, self.little_endian)
-            elif field_type == 6: # SBYTE
-               for value in values:
-                  self.write_word(value, fid, 1, True, self.little_endian)
-            elif field_type == 7: # UNDEFINED
-               for value in values:
-                  self.write_word(value, fid, 1, False, self.little_endian)
-            elif field_type == 8: # SSHORT
-               for value in values:
-                  self.write_word(value, fid, 2, True, self.little_endian)
-            elif field_type == 9: # SLONG
-               for value in values:
-                  self.write_word(value, fid, 4, True, self.little_endian)
-            elif field_type == 10: # SRATIONAL
-               for value in values:
-                  self.write_word(value[0], fid, 4, True, self.little_endian)
-                  self.write_word(value[1], fid, 4, True, self.little_endian)
-            elif field_type == 11: # FLOAT
-               for value in values:
-                  self.write_float(value, fid, 4, self.little_endian)
-            elif field_type == 12: # DOUBLE
-               for value in values:
-                  self.write_float(value, fid, 8, self.little_endian)
+         # write TIFF directory
+         offset_ptr, free_ptr = self.write_directory(IFD, fid, ifd_offset)
       # write null offset to IFD
       fid.seek(offset_ptr)
       self.write_word(0, fid, 4, False, self.little_endian)
