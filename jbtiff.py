@@ -228,7 +228,7 @@ class tiff_file():
          # add IFD bytes
          spans.add_range(ifd_offset, ifd_offset + 2 + entry_count*12 + 4 - 1)
          # read IFD entries
-         IFD = []
+         IFD = {}
          for i in range(entry_count):
             # make sure we're in the correct position
             fid.seek(ifd_offset + 2 + i*12)
@@ -273,7 +273,7 @@ class tiff_file():
             elif field_type == 12: # DOUBLE
                values = [self.read_float(fid, 8, self.little_endian) for j in range(value_count)]
             # store entry in IFD table
-            IFD.append((tag, field_type, values))
+            IFD[tag] = (field_type, values)
          # store IFD in table
          self.IFDs.append(IFD)
          # make sure we're in the correct position to read next offset
@@ -308,7 +308,7 @@ class tiff_file():
          offset_ptr = ifd_offset + 2 + entry_count*12
          free_ptr =  offset_ptr + 4
          # write IFD entries
-         for i, (tag, field_type, values) in enumerate(IFD):
+         for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
             # make sure we're in the correct position
             fid.seek(ifd_offset + 2 + i*12)
             # write IFD entry information
@@ -382,7 +382,7 @@ class tiff_file():
       for k, IFD in enumerate(self.IFDs):
          print >> fid, "IFD#%d:" % k
          # write IFD entries
-         for i, (tag, field_type, values) in enumerate(IFD):
+         for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
             print >> fid, "   Entry %d:" % i
             # write IFD entry information
             print >> fid, "      Tag: %s" % tag
