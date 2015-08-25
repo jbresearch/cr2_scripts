@@ -104,6 +104,11 @@ class tiff_file():
 
    ## class functions
 
+   # return value aligned to word boundary (increasing as necessary)
+   @staticmethod
+   def align(value, word_size=2):
+      return ((value + word_size - 1) // word_size) * word_size
+
    # read a word of given size (in bytes), endianness, and signed/unsigned state
    @staticmethod
    def read_word(fid, size, signed, little_endian):
@@ -322,7 +327,7 @@ class tiff_file():
                fid.seek(strip_offset)
                fid.write(strip)
                # update free pointer
-               free_ptr += strip_length
+               free_ptr = self.align(free_ptr + strip_length)
          # write offset to this IFD
          ifd_offset = free_ptr
          fid.seek(offset_ptr)
@@ -333,7 +338,7 @@ class tiff_file():
          self.write_word(entry_count, fid, 2, False, self.little_endian)
          # update pointer to offset and to next free space
          offset_ptr = ifd_offset + 2 + entry_count*12
-         free_ptr =  offset_ptr + 4
+         free_ptr =  self.align(offset_ptr + 4)
          # write IFD entries
          for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
             # make sure we're in the correct position
@@ -352,7 +357,7 @@ class tiff_file():
                value_offset = free_ptr
                self.write_word(value_offset, fid, 4, False, self.little_endian)
                fid.seek(value_offset)
-               free_ptr += self.field_size[field_type] * value_count
+               free_ptr = self.align(free_ptr + self.field_size[field_type] * value_count)
             # write value(s)
             if field_type == 1: # BYTE
                for value in values:
