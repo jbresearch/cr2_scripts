@@ -214,7 +214,7 @@ class tiff_file():
       # add header bytes
       spans.add_range(0, 8-1)
       # initialize IFD table
-      self.IFDs = []
+      self.data = []
       # read all IFDs in file
       while True:
          # get offset to IFD
@@ -275,7 +275,7 @@ class tiff_file():
             # store entry in IFD table
             IFD[tag] = (field_type, values)
          # store IFD in table
-         self.IFDs.append(IFD)
+         self.data.append(IFD)
          # make sure we're in the correct position to read next offset
          fid.seek(ifd_offset + 2 + entry_count*12)
       # display range of bytes used
@@ -295,7 +295,7 @@ class tiff_file():
       offset_ptr = 4
       free_ptr = 8
       # write all IFDs in file
-      for IFD in self.IFDs:
+      for IFD in self.data:
          # write offset to this IFD
          ifd_offset = free_ptr
          fid.seek(offset_ptr)
@@ -378,15 +378,15 @@ class tiff_file():
          print >> fid, "Byte order: little-endian"
       else:
          print >> fid, "Byte order: big-endian"
-      # write all IFDs in file
-      for k, IFD in enumerate(self.IFDs):
+      # display all IFDs in file
+      for k, IFD in enumerate(self.data):
          print >> fid, "IFD#%d:" % k
-         # write IFD entries
+         # display IFD entries
          for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
             print >> fid, "   Entry %d:" % i
-            # write IFD entry information
+            # display IFD entry information
             print >> fid, "      Tag: %s" % tag
             print >> fid, "      Type: %d (%s)" % (field_type, self.field_name[field_type])
-            # write value(s)
+            # display value(s)
             print >> fid, "      Value: %s" % values
       return
