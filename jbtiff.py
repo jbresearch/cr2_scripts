@@ -39,6 +39,21 @@ class tiff_file():
       12: 8, # DOUBLE Double precision (8-byte) IEEE format.
       }
 
+   field_name = {
+      1: 'BYTE',
+      2: 'ASCII',
+      3: 'SHORT',
+      4: 'LONG',
+      5: 'RATIONAL',
+      6: 'SBYTE',
+      7: 'UNDEFINED',
+      8: 'SSHORT',
+      9: 'SLONG',
+      10: 'SRATIONAL',
+      11: 'FLOAT',
+      12: 'DOUBLE',
+      }
+
    ## class functions
 
    # read a word of given size (in bytes), endianness, and signed/unsigned state
@@ -296,4 +311,24 @@ class tiff_file():
       # write null offset to IFD
       fid.seek(offset_ptr)
       self.write_word(0, fid, 4, False, self.little_endian)
+      return
+
+   # print formatted data to stream
+   def display(self, fid):
+      # byte order
+      if self.little_endian:
+         print >> fid, "Byte order: little-endian"
+      else:
+         print >> fid, "Byte order: big-endian"
+      # write all IFDs in file
+      for k, IFD in enumerate(self.IFDs):
+         print >> fid, "IFD#%d:" % k
+         # write IFD entries
+         for i, (tag, field_type, values) in enumerate(IFD):
+            print >> fid, "   Entry %d:" % i
+            # write IFD entry information
+            print >> fid, "      Tag: %s" % tag
+            print >> fid, "      Type: %d (%s)" % (field_type, self.field_name[field_type])
+            # write value(s)
+            print >> fid, "      Value: %s" % values
       return
