@@ -201,6 +201,27 @@ class tiff_file():
 
    ## class methods
 
+   # read CR2 header if present
+   def read_cr2_header(self, fid, spans):
+      self.cr2 = False
+      # read first TIFF offset
+      fid.seek(4)
+      tmp = self.read_word(fid, 4, False, self.little_endian)
+      if tmp != 16:
+         return
+      # read CR2 magic word
+      tmp = fid.read(2)
+      if tmp != 'CR':
+         return
+      # read CR2 header data
+      self.cr2 = True
+      self.cr2_major = self.read_word(fid, 1, False, self.little_endian)
+      self.cr2_minor = self.read_word(fid, 1, False, self.little_endian)
+      self.cr2_ifd_offset = self.read_word(fid, 4, False, self.little_endian)
+      # add header bytes
+      spans.add_range(8, 16-1)
+      return
+
    # read TIFF directory, starting at given offset
    def read_directory(self, fid, ifd_offset, spans):
       # read number of IFD entries
@@ -284,6 +305,8 @@ class tiff_file():
       spans.add_range(0, 8-1)
       # initialize pointer to next IFD offset
       offset_ptr = 4
+      # check if this is a CR2 file
+      self.read_cr2_header(fid, spans)
       # initialize IFD table
       self.data = []
       # read all IFDs and associated strips in file
@@ -448,6 +471,10 @@ class tiff_file():
          print >> fid, "Byte order: little-endian"
       else:
          print >> fid, "Byte order: big-endian"
+      # CR2 header if present
+      if self.cr2:
+         print >> fid, "CR2: v%d.%d" % (self.cr2_major, self.cr2_minor)
+         print >> fid, "CR2: IFD at 0x%08x" % (self.cr2_ifd_offset)
       # display all IFDs in file
       for k, (IFD, strips) in enumerate(self.data):
          print >> fid, "IFD#%d:" % k
