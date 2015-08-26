@@ -314,22 +314,25 @@ class tiff_file():
       return
 
    # write TIFF directory, starting at given offset
-   def write_directory(self, IFD, fid, ifd_offset):
+   def write_directory(self, IFD, fid, ifd_offset, isleaf=False):
       # write number of IFD entries
       fid.seek(ifd_offset)
       entry_count = len(IFD)
       self.write_word(entry_count, fid, 2, False, self.little_endian)
       # update pointer to offset and to next free space
-      offset_ptr = ifd_offset + 2 + entry_count*12
-      free_ptr = self.align(offset_ptr + 4)
+      if isleaf:
+         free_ptr = self.align(ifd_offset + 2 + entry_count*12)
+      else:
+         offset_ptr = ifd_offset + 2 + entry_count*12
+         free_ptr = self.align(offset_ptr + 4)
       # write any subdirectories present
       for tag in [34665, 34853]: # EXIF, GPS
          if tag in IFD:
             field_type, values = IFD[tag]
-            sub_ifd_offset = free_ptr
-            sub_offset_ptr, free_ptr = self.write_directory(values, fid, sub_ifd_offset)
+            sub_offset = free_ptr
+            free_ptr = self.write_directory(values, fid, sub_offset, True)
             # replace value with offset for this subdirectory
-            IFD[tag] = (field_type, [sub_ifd_offset])
+            IFD[tag] = (field_type, [sub_offset])
       # write IFD entries
       for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
          # make sure we're in the correct position
@@ -389,7 +392,11 @@ class tiff_file():
          elif field_type == 12: # DOUBLE
             for value in values:
                self.write_float(value, fid, 8, self.little_endian)
-      return offset_ptr, free_ptr
+      # return updated pointers
+      if isleaf:
+         return free_ptr
+      else:
+         return offset_ptr, free_ptr
 
    # write data to stream
    def write(self, fid):
