@@ -282,17 +282,22 @@ class tiff_file():
       assert tmp == 42
       # add header bytes
       spans.add_range(0, 8-1)
+      # initialize pointer to next IFD offset
+      offset_ptr = 4
       # initialize IFD table
       self.data = []
       # read all IFDs and associated strips in file
       while True:
          # get offset to IFD
+         fid.seek(offset_ptr)
          ifd_offset = self.read_word(fid, 4, False, self.little_endian)
          # check if this was the last one
          if ifd_offset == 0:
             break
          # read TIFF directory
          IFD = self.read_directory(fid, ifd_offset, spans)
+         # update pointer to next IFD offset
+         offset_ptr = ifd_offset + 2 + len(IFD)*12
          # read data strips if present
          strips = []
          if 273 in IFD:
@@ -304,8 +309,6 @@ class tiff_file():
                spans.add_range(strip_offset, strip_offset + strip_length - 1)
          # store IFD and data strips in table
          self.data.append((IFD, strips))
-         # make sure we're in the correct position to read next offset
-         fid.seek(ifd_offset + 2 + len(IFD)*12)
       # display range of bytes used
       print "Bytes read:", spans.display()
       return
