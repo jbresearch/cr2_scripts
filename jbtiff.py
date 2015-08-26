@@ -239,6 +239,7 @@ class tiff_file():
          field_type = self.read_word(fid, 2, False, self.little_endian)
          value_count = self.read_word(fid, 4, False, self.little_endian)
          # check if the value fits here or if we need offset
+         value_offset = None
          if self.field_size[field_type] * value_count > 4:
             value_offset = self.read_word(fid, 4, False, self.little_endian)
             fid.seek(value_offset)
@@ -274,16 +275,20 @@ class tiff_file():
             values = [self.read_float(fid, 4, self.little_endian) for j in range(value_count)]
          elif field_type == 12: # DOUBLE
             values = [self.read_float(fid, 8, self.little_endian) for j in range(value_count)]
-         # store entry in IFD table
-         IFD[tag] = (field_type, values)
+         # store entry in IFD table with original offset if present
+         IFD[tag] = (field_type, values, value_offset)
       # recursively read sub directories as needed
       for tag in [34665, 34853]: # EXIF, GPS
          if tag in IFD:
-            field_type, values = IFD[tag]
+            # read original entry details
+            field_type, values, value_offset = IFD[tag]
             assert len(values) == 1
-            tmp = self.read_directory(fid, values[0], spans)
+            assert value_offset == None
+            # decode
+            value_offset = values[0]
+            values = self.read_directory(fid, value_offset, spans)
             # replace values with subdirectory and original offset
-            IFD[tag] = (field_type, (tmp, values[0]))
+            IFD[tag] = (field_type, values, value_offset)
       # return directory
       return IFD
 
@@ -352,13 +357,13 @@ class tiff_file():
       # write any subdirectories present
       for tag in [34665, 34853]: # EXIF, GPS
          if tag in IFD:
-            field_type, (sub_IFD, sub_offset) = IFD[tag]
-            sub_offset = free_ptr
-            free_ptr = self.write_directory(sub_IFD, fid, sub_offset, True)
+            field_type, values, value_offset = IFD[tag]
+            value_offset = free_ptr
+            free_ptr = self.write_directory(values, fid, value_offset, True)
             # replace value with offset for this subdirectory
-            IFD[tag] = (field_type, [sub_offset])
+            IFD[tag] = (field_type, [value_offset], None)
       # write IFD entries
-      for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
+      for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
          # make sure we're in the correct position
          fid.seek(ifd_offset + 2 + i*12)
          # write IFD entry information
@@ -371,11 +376,13 @@ class tiff_file():
             value_count = len(values)
          self.write_word(value_count, fid, 4, False, self.little_endian)
          # check if the value fits here or if we need offset
+         value_offset = None
          if self.field_size[field_type] * value_count > 4:
             value_offset = free_ptr
             self.write_word(value_offset, fid, 4, False, self.little_endian)
             fid.seek(value_offset)
             free_ptr = self.align(free_ptr + self.field_size[field_type] * value_count)
+            # TODO: Update record with new value_offset
          # write value(s)
          if field_type == 1: # BYTE
             for value in values:
@@ -480,16 +487,15 @@ class tiff_file():
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          print >> fid, "IFD#%d: at 0x%08x" % (k, ifd_offset)
          # display IFD entries
-         for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
+         for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
             print >> fid, "   Entry %d:" % i
             # display IFD entry information
             print >> fid, "      Tag: %s" % tag
             print >> fid, "      Type: %d (%s)" % (field_type, self.field_name[field_type])
+            # display value offset if present
+            if value_offset:
+               print >> fid, "      Pointer: 0x%08x" % value_offset
             # display value(s)
-            if isinstance(values, tuple):
-               print >> fid, "      Pointer: 0x%08x" % values[1]
-               print >> fid, "      Values:", values[0]
-            else:
-               assert isinstance(values, list)
-               print >> fid, "      Values:", values
+            assert isinstance(values, (list, dict))
+            print >> fid, "      Values:", values
       return
