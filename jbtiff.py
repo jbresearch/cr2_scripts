@@ -282,8 +282,9 @@ class tiff_file():
             field_type, values = IFD[tag]
             assert len(values) == 1
             tmp = self.read_directory(fid, values[0], spans)
-            # replace values with subdirectory
-            IFD[tag] = (field_type, tmp)
+            # replace values with subdirectory and original offset
+            IFD[tag] = (field_type, (tmp, values[0]))
+      # return directory
       return IFD
 
    # initialize class from stream
@@ -330,8 +331,8 @@ class tiff_file():
                fid.seek(strip_offset)
                strips.append(fid.read(strip_length))
                spans.add_range(strip_offset, strip_offset + strip_length - 1)
-         # store IFD and data strips in table
-         self.data.append((IFD, strips))
+         # store IFD, original offset, and data strips in table
+         self.data.append((IFD, ifd_offset, strips))
       # display range of bytes used
       print "Bytes read:", spans.display()
       return
@@ -351,9 +352,9 @@ class tiff_file():
       # write any subdirectories present
       for tag in [34665, 34853]: # EXIF, GPS
          if tag in IFD:
-            field_type, values = IFD[tag]
+            field_type, (sub_IFD, sub_offset) = IFD[tag]
             sub_offset = free_ptr
-            free_ptr = self.write_directory(values, fid, sub_offset, True)
+            free_ptr = self.write_directory(sub_IFD, fid, sub_offset, True)
             # replace value with offset for this subdirectory
             IFD[tag] = (field_type, [sub_offset])
       # write IFD entries
@@ -434,7 +435,7 @@ class tiff_file():
       offset_ptr = 4
       free_ptr = 8
       # write all IFDs and associated strips in file
-      for IFD, strips in self.data:
+      for IFD, ifd_offset, strips in self.data:
          # write data strips if present
          if strips:
             assert 273 in IFD
@@ -476,8 +477,8 @@ class tiff_file():
          print >> fid, "CR2: v%d.%d" % (self.cr2_major, self.cr2_minor)
          print >> fid, "CR2: IFD at 0x%08x" % (self.cr2_ifd_offset)
       # display all IFDs in file
-      for k, (IFD, strips) in enumerate(self.data):
-         print >> fid, "IFD#%d:" % k
+      for k, (IFD, ifd_offset, strips) in enumerate(self.data):
+         print >> fid, "IFD#%d: at 0x%08x" % (k, ifd_offset)
          # display IFD entries
          for i, (tag, (field_type, values)) in enumerate(sorted(IFD.iteritems())):
             print >> fid, "   Entry %d:" % i
@@ -485,5 +486,5 @@ class tiff_file():
             print >> fid, "      Tag: %s" % tag
             print >> fid, "      Type: %d (%s)" % (field_type, self.field_name[field_type])
             # display value(s)
-            print >> fid, "      Value: %s" % values
+            print >> fid, "      Value:", values
       return
