@@ -342,6 +342,21 @@ class tiff_file():
       print "Bytes read:", spans.display()
       return
 
+   # write CR2 header if necessary
+   def write_cr2_header(self, fid, free_ptr):
+      # make sure this is a CR2 file
+      if not self.cr2:
+         return free_ptr, None
+      # go to start of CR2 header
+      assert free_ptr == 8
+      fid.seek(free_ptr)
+      # write CR2 magic word and version
+      fid.write('CR')
+      self.write_word(self.cr2_major, fid, 1, False, self.little_endian)
+      self.write_word(self.cr2_minor, fid, 1, False, self.little_endian)
+      self.write_word(0, fid, 4, False, self.little_endian) # space for CR2 IFD offset
+      return free_ptr+8, free_ptr+4
+
    # write TIFF directory, starting at given offset
    def write_directory(self, IFD, fid, ifd_offset, isleaf=False):
       # write number of IFD entries
@@ -441,8 +456,10 @@ class tiff_file():
       # initialize pointers to offset and to next free space
       offset_ptr = 4
       free_ptr = 8
+      # write CR2 header if necessary
+      free_ptr, cr2_offset_ptr = self.write_cr2_header(fid, free_ptr)
       # write all IFDs and associated strips in file
-      for IFD, ifd_offset, strips in self.data:
+      for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          # write data strips if present
          if strips:
             assert 273 in IFD
@@ -461,6 +478,13 @@ class tiff_file():
                fid.write(strip)
                # update free pointer
                free_ptr = self.align(free_ptr + strip_length)
+         # if this was the CR2 IFD, write its offset in header
+         if self.cr2 and ifd_offset == self.cr2_ifd_offset:
+            print "Writing offset to IFD#%d = 0x%08x as CR2" % (k, free_ptr)
+            self.cr2_ifd_offset = free_ptr
+            assert cr2_offset_ptr == 12
+            fid.seek(cr2_offset_ptr)
+            self.write_word(self.cr2_ifd_offset, fid, 4, False, self.little_endian)
          # write offset to this IFD
          ifd_offset = free_ptr
          fid.seek(offset_ptr)
