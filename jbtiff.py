@@ -486,5 +486,10 @@ class tiff_file():
             print >> fid, "      Tag: %s" % tag
             print >> fid, "      Type: %d (%s)" % (field_type, self.field_name[field_type])
             # display value(s)
-            print >> fid, "      Value:", values
+            if isinstance(values, tuple):
+               print >> fid, "      Pointer: 0x%08x" % values[1]
+               print >> fid, "      Values:", values[0]
+            else:
+               assert isinstance(values, list)
+               print >> fid, "      Values:", values
       return
