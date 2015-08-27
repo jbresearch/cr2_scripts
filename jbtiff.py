@@ -18,6 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+import os
 import struct
 
 class value_range():
@@ -101,6 +102,13 @@ class tiff_file():
       11: 'FLOAT',
       12: 'DOUBLE',
       }
+
+   tag_name = {}
+   # load tag names from text file
+   dirname = os.path.dirname(os.path.abspath(__file__))
+   for line in open(os.path.join(dirname,'tiff-tags.txt'),'r'):
+      record = line.split('\t')
+      tag_name[int(record[0])] = record[2]
 
    ## class functions
 
@@ -502,7 +510,10 @@ class tiff_file():
       for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
          print >> fid, " "*3*shift + "Entry %d:" % i
          # display IFD entry information
-         print >> fid, " "*3*(shift+1) + "Tag: %s" % tag
+         if tag in tiff_file.tag_name:
+            print >> fid, " "*3*(shift+1) + "Tag: %d (%s)" % (tag, tiff_file.tag_name[tag])
+         else:
+            print >> fid, " "*3*(shift+1) + "Tag: %d" % tag
          print >> fid, " "*3*(shift+1) + "Type: %d (%s)" % (field_type, tiff_file.field_name[field_type])
          # display value offset if present
          if value_offset:
