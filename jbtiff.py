@@ -488,7 +488,7 @@ class tiff_file():
                free_ptr = tiff_file.align(free_ptr + strip_length)
          # if this was the CR2 IFD, write its offset in header
          if self.cr2 and ifd_offset == self.cr2_ifd_offset:
-            print "Writing offset to IFD#%d = 0x%08x as CR2" % (k, free_ptr)
+            print "Writing offset to IFD#%d = %d (0x%08x) as CR2" % (k, free_ptr, free_ptr)
             self.cr2_ifd_offset = free_ptr
             assert cr2_offset_ptr == 12
             fid.seek(cr2_offset_ptr)
@@ -517,7 +517,7 @@ class tiff_file():
          print >> fid, " "*3*(shift+1) + "Type: %d (%s)" % (field_type, tiff_file.field_name[field_type])
          # display value offset if present
          if value_offset:
-            print >> fid, " "*3*(shift+1) + "Pointer: 0x%08x" % value_offset
+            print >> fid, " "*3*(shift+1) + "Pointer: %d (0x%08x)" % (value_offset, value_offset)
          # display value(s)
          if isinstance(values, list):
             print >> fid, " "*3*(shift+1) + "Values:", values
@@ -539,10 +539,10 @@ class tiff_file():
       # CR2 header if present
       if self.cr2:
          print >> fid, "CR2: v%d.%d" % (self.cr2_major, self.cr2_minor)
-         print >> fid, "CR2: IFD at 0x%08x" % (self.cr2_ifd_offset)
+         print >> fid, "CR2: IFD at %d (0x%08x)" % (self.cr2_ifd_offset, self.cr2_ifd_offset)
       # display all IFDs in file
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
-         print >> fid, "IFD#%d: at 0x%08x" % (k, ifd_offset)
+         print >> fid, "IFD#%d: at %d (0x%08x)" % (k, ifd_offset, ifd_offset)
          # display IFD entries
          tiff_file.display_directory(fid, IFD)
       return
