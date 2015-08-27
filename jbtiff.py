@@ -601,3 +601,15 @@ class tiff_file():
          # display IFD entries
          tiff_file.display_directory(fid, IFD)
       return
+
+   # print formatted data to stream
+   def save_data(self):
+      # go through all IFDs in file
+      for k, (IFD, ifd_offset, strips) in enumerate(self.data):
+         # save strips
+         if strips:
+            fid = open('ifd-%d.dat' % k, 'w')
+            for strip in strips:
+               fid.write(strip)
+            fid.close()
+      return
