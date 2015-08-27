@@ -497,6 +497,28 @@ class tiff_file():
       return
 
    # print formatted data to stream
+   @staticmethod
+   def display_directory(fid, IFD, shift=1):
+      for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
+         print >> fid, " "*3*shift + "Entry %d:" % i
+         # display IFD entry information
+         print >> fid, " "*3*(shift+1) + "Tag: %s" % tag
+         print >> fid, " "*3*(shift+1) + "Type: %d (%s)" % (field_type, tiff_file.field_name[field_type])
+         # display value offset if present
+         if value_offset:
+            print >> fid, " "*3*(shift+1) + "Pointer: 0x%08x" % value_offset
+         # display value(s)
+         if isinstance(values, list):
+            print >> fid, " "*3*(shift+1) + "Values:", values
+         elif isinstance(values, dict):
+            print >> fid, " "*3*(shift+1) + "Subdirectory:"
+            # display subdirectory entries
+            tiff_file.display_directory(fid, values, shift+1)
+         else:
+            raise AssertionError("Unknown value type")
+      return
+
+   # print formatted data to stream
    def display(self, fid):
       # byte order
       if self.little_endian:
@@ -511,15 +533,5 @@ class tiff_file():
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          print >> fid, "IFD#%d: at 0x%08x" % (k, ifd_offset)
          # display IFD entries
-         for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
-            print >> fid, "   Entry %d:" % i
-            # display IFD entry information
-            print >> fid, "      Tag: %s" % tag
-            print >> fid, "      Type: %d (%s)" % (field_type, self.field_name[field_type])
-            # display value offset if present
-            if value_offset:
-               print >> fid, "      Pointer: 0x%08x" % value_offset
-            # display value(s)
-            assert isinstance(values, (list, dict))
-            print >> fid, "      Values:", values
+         self.display_directory(fid, IFD)
       return
