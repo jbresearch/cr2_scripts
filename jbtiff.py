@@ -43,6 +43,52 @@ class value_range():
       self.flatten()
       return
 
+   # add ranges of numbers from another set
+   def add_ranges(self, x):
+      assert isinstance(x, value_range)
+      for k in x.data:
+         self.add_range(k[0], k[1])
+      return
+
+   # subtract range of numbers, both inclusive
+   def sub_range(self, lo, hi):
+      assert lo <= hi
+      tmp = []
+      # copy over existing spans, editing as needed
+      for a,b in self.data:
+         # unaffected span
+         if b < lo or a > hi:
+            tmp.append((a,b))
+            continue
+         # completely subtracted span
+         if a >= lo and b <= hi:
+            continue
+         # interior part erased
+         if a < lo and b > hi:
+            tmp.append((a, lo-1))
+            tmp.append((hi+1, b))
+            continue
+         # initial part erased
+         if a < lo:
+            tmp.append((a, lo-1))
+            continue
+         # final part erased
+         if b > hi:
+            tmp.append((hi+1, b))
+            continue
+         # catch-all
+         raise AssertionError("Unhandled situation: remove %s from %s" % ((lo,hi), (a,b)))
+      # replace table with new version
+      self.data = tmp
+      return
+
+   # subtract ranges of numbers from another set
+   def sub_ranges(self, x):
+      assert isinstance(x, value_range)
+      for k in x.data:
+         self.sub_range(k[0], k[1])
+      return
+
    # flatten sequence of ranges into shortest expression
    def flatten(self):
       tmp = []
@@ -348,6 +394,15 @@ class tiff_file():
          self.data.append((IFD, ifd_offset, strips))
       # display range of bytes used
       print "Bytes read:", spans.display()
+      # determine file size
+      fid.seek(0, 2)
+      fsize = fid.tell()
+      # determine range of bytes unused
+      unused = value_range()
+      unused.add_range(0, fsize-1)
+      unused.sub_ranges(spans)
+      # display range of bytes unused
+      print "Bytes not read:", unused.display()
       return
 
    # write CR2 header if necessary
