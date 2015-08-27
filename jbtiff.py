@@ -113,7 +113,7 @@ class value_range():
 
    # display overall range used
    def display(self):
-      return ', '.join(['%d-%d' % (a,b) for a,b in self.data])
+      return ', '.join(['%d-%d' % (a,b) if b>a else '%d' % a for a,b in self.data])
 
 class tiff_file():
 
