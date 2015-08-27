@@ -332,7 +332,7 @@ class tiff_file():
          # store entry in IFD table with original offset if present
          IFD[tag] = (field_type, values, value_offset)
       # recursively read sub directories as needed
-      for tag in [34665, 34853]: # EXIF, GPS
+      for tag in [34665, 34853, 40965]: # EXIF, GPS, Interoperability
          if tag in IFD:
             # read original entry details
             field_type, values, value_offset = IFD[tag]
@@ -433,7 +433,7 @@ class tiff_file():
          offset_ptr = ifd_offset + 2 + entry_count*12
          free_ptr = tiff_file.align(offset_ptr + 4)
       # write any subdirectories present
-      for tag in [34665, 34853]: # EXIF, GPS
+      for tag in [34665, 34853, 40965]: # EXIF, GPS, Interoperability
          if tag in IFD:
             field_type, values, value_offset = IFD[tag]
             value_offset = free_ptr
