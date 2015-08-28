@@ -29,7 +29,7 @@ def main():
    parser = argparse.ArgumentParser()
    parser.add_argument("-i", "--input", required=True,
                      help="input raw file to process")
-   parser.add_argument("-o", "--output", required=True,
+   parser.add_argument("-o", "--output",
                      help="output processed raw file")
    parser.add_argument("-d", "--display", action="store_true", default=False,
                      help="print read data")
@@ -45,8 +45,9 @@ def main():
    # save data strips as needed
    if args.save_data:
       tiff.save_data()
-   # write output file
-   tiff.write(open(args.output, 'w'))
+   # write output file if requested
+   if args.output:
+      tiff.write(open(args.output, 'w'))
    return
 
 # main entry point
