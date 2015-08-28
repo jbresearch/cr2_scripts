@@ -28,21 +28,35 @@ def main():
    # interpret user options
    parser = argparse.ArgumentParser()
    parser.add_argument("-i", "--input", required=True,
-                     help="input raw file to process")
-   parser.add_argument("-o", "--output",
-                     help="output file basename for embedded data in IFDs")
-   parser.add_argument("-d", "--display", action="store_true", default=False,
-                     help="print read data")
+                     help="input raw file to use as basis")
+   parser.add_argument("-j", "--jpeg", required=True,
+                     help="input lossles jpeg file with replacement sensor data")
+   parser.add_argument("-o", "--output", required=True,
+                     help="output CR2 file")
    args = parser.parse_args()
 
-   # read input file
+   # read input raw file
    tiff = jbtiff.tiff_file(open(args.input, 'r'))
-   # print data as needed
-   if args.display:
-      tiff.display(sys.stdout)
-   # save data strips as needed
-   if args.output:
-      tiff.save_data(args.output)
+   # read input lossless jpeg file
+   with open(args.jpeg, 'r') as fid:
+      jpeg = fid.read()
+   # replace lossless jpeg data strip
+   assert tiff.cr2
+   for k, (IFD, ifd_offset, strips) in enumerate(tiff.data):
+      # find IFD with raw sensor data
+      if not tiff.cr2_ifd_offset == ifd_offset:
+         continue
+      # replace data strips with new lossless jpeg data
+      assert strips
+      assert 273 in IFD
+      assert 279 in IFD
+      # replace strip
+      del strips[:]
+      strips.append(jpeg)
+      # update IFD data
+      IFD[279] = (4, [len(jpeg)], 0)
+   # save updated CR2 file
+   tiff.write(open(args.output,'w'))
    return
 
 # main entry point
