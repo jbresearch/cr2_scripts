@@ -22,6 +22,7 @@ import argparse
 import commands
 import numpy as np
 import matplotlib.pyplot as plt
+import Image
 
 ## main program
 
@@ -62,7 +63,6 @@ def main():
    for line in out.split('\n'):
       if line.startswith('>> '):
          record = line.split()
-         print record
          f = record[4]
          w = int(record[6])
          h = int(record[8])
@@ -89,6 +89,10 @@ def main():
       col_s = sum(slice_widths[0:i])
       col_e = col_s + sw
       I[:,col_s:col_e] = a.flat[col_s*args.height:col_e*args.height].reshape(args.height,sw)
+
+   # save result
+   im = Image.fromarray(I.astype('int32'))
+   im.save(args.output, optimize=True)
 
    # show user what we've done, as needed
    if args.display:
