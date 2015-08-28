@@ -32,7 +32,7 @@ def main():
    parser.add_argument("-i", "--input", required=True,
                      help="input JPEG lossless raw data file to process")
    parser.add_argument("-o", "--output", required=True,
-                     help="output processed image file")
+                     help="output processed image file (use PNG extension)")
    parser.add_argument("-W", "--width", required=True, type=int,
                      help="sensor image width (from RAW IFD)")
    parser.add_argument("-H", "--height", required=True, type=int,
