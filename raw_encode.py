@@ -30,83 +30,67 @@ def main():
    # interpret user options
    parser = argparse.ArgumentParser()
    parser.add_argument("-i", "--input", required=True,
-                     help="input JPEG lossless raw data file to process")
+                     help="input image file to encode")
    parser.add_argument("-o", "--output", required=True,
-                     help="output processed image file (use PNG extension)")
-   parser.add_argument("-W", "--width", required=True, type=int,
-                     help="sensor image width (from RAW IFD)")
-   parser.add_argument("-H", "--height", required=True, type=int,
-                     help="sensor image height (from RAW IFD)")
+                     help="output JPEG lossless raw data file")
    parser.add_argument("-S", "--slice", required=True, type=int,
                      help="first sensor image slice width")
+   parser.add_argument("-C", "--components", required=True, type=int,
+                     help="number of color components to create")
+   parser.add_argument("-P", "--precision", required=True, type=int,
+                     help="number of bits per sensor pixel")
    parser.add_argument("-d", "--display", action="store_true", default=False,
-                     help="display interpreted image")
+                     help="display encoded images")
    args = parser.parse_args()
 
-   # Laurent Clévy's example:
-   # Image (w x h): 5184 x 3456
-   # 4 color components (w x h): 0x538 x 0xdbc = 1336 x 3516 each
-   #    interleaved components: 5344 x 3516
-   #    border: 160 x 60 on declared image size
-   # 3 slices (w): 2x 0x6c0 + 0x760 = 2x 1728 + 1888 = 5344
-   #    each slice takes: 432 pixels from each of 4 colors (first two)
-   #                      472 pixels from each of 4 colors (last one)
+   # See raw_decode.py for color components & slicing example
 
-   # convert lossless JPEG encoded input file to raw data
-   cmd = 'pvrg-jpeg -d -s "%s" -o parts' % args.input
-   st, out = commands.getstatusoutput(cmd)
-   if st != 0:
-      raise AssertionError('Error decoding JPEG file: %s' % out)
-
-   # interpret output to determine color components
-   components = []
-   for line in out.split('\n'):
-      if line.startswith('>> '):
-         record = line.split()
-         f = record[4]
-         w = int(record[6])
-         h = int(record[8])
-         components.append((f,w,h))
-   # number of color components
-   n = len(components)
-   # first assemble color components
-   assert all([h == args.height for f,w,h in components])
-   assert sum([w for f,w,h in components]) == args.width
-   a = np.zeros((args.height, args.width), dtype=np.dtype('>H'))
-   for i, (f,w,h) in enumerate(components):
-      # read raw data for this color component
-      b = np.fromfile(f, dtype=np.dtype('>H'))
-      b.shape = (h,w)
-      # insert into assembled color image
-      a[:,i::n] = b
+   # load sensor image
+   im = Image.open(args.input)
+   assert len(im.mode) == 1 # must be a one-channel image
+   (width,height) = im.size
+   I = np.asarray(im).reshape(height,width) # array is read-only!
 
    # determine the number of slices and the width of each slice
-   slices = (args.width + args.slice - 1) // args.slice
-   slice_widths = [args.slice] * (slices-1) + [args.width - args.slice*(slices-1)]
-   # next unslice image
-   I = np.zeros((args.height, args.width), dtype=np.dtype('>H'))
+   slices = (width + args.slice - 1) // args.slice
+   slice_widths = [args.slice] * (slices-1) + [width - args.slice*(slices-1)]
+   # first slice image
+   a = np.zeros((height, width), dtype=np.dtype('>H'))
    for i, sw in enumerate(slice_widths):
       col_s = sum(slice_widths[0:i])
       col_e = col_s + sw
-      I[:,col_s:col_e] = a.flat[col_s*args.height:col_e*args.height].reshape(args.height,sw)
+      a.flat[col_s*height:col_e*height] = I[:,col_s:col_e].flat
 
-   # save result
-   im = Image.fromarray(I.astype('int32'))
-   im.save(args.output, optimize=True)
+   # determine color components to create
+   components = []
+   for i in range(args.components):
+      f = 'parts.%d' % (i+1)
+      components.append(f)
+   # next split color components
+   for i, f in enumerate(components):
+      # space for raw data for this color component
+      b = np.zeros((height, width / args.components), dtype=np.dtype('>H'))
+      # extract data from sliced color image
+      b = a[:,i::args.components]
+      # save to file
+      b.tofile(f)
+      # show user what we've done, as needed
+      if args.display:
+         plt.figure()
+         plt.imshow(b, cmap=plt.cm.gray)
+         plt.title('%s (linear)' % f)
+
+   # convert raw data color components to lossless JPEG encoded file
+   cmd = 'pvrg-jpeg -ih %d -iw %d -k 7 -p %d -s "%s"' % \
+      (height, width / args.components, args.precision, args.output)
+   for i, f in enumerate(components):
+      cmd += ' -ci %d %s' % (i+1, f)
+   st, out = commands.getstatusoutput(cmd)
+   if st != 0:
+      raise AssertionError('Error encoding JPEG file: %s' % out)
 
    # show user what we've done, as needed
    if args.display:
-      # linear display
-      plt.figure()
-      plt.imshow(I, cmap=plt.cm.gray)
-      plt.title('%s (linear)' % args.input)
-      # gamma-corrected
-      gamma = 2.2
-      I = np.power(I/float(I.max()), 1/gamma)
-      plt.figure()
-      plt.imshow(I, cmap=plt.cm.gray)
-      plt.title('%s (gamma %g)' % (args.input, gamma))
-      # show everything
       plt.show()
    return
 
