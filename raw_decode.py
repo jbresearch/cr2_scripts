@@ -30,9 +30,9 @@ def main():
    # interpret user options
    parser = argparse.ArgumentParser()
    parser.add_argument("-i", "--input", required=True,
-                     help="input JPEG lossless raw data file to process")
+                     help="input JPEG lossless raw data file to decode")
    parser.add_argument("-o", "--output", required=True,
-                     help="output processed image file (use PNG extension)")
+                     help="output decoded image file (use PNG extension)")
    parser.add_argument("-W", "--width", required=True, type=int,
                      help="sensor image width (from RAW IFD)")
    parser.add_argument("-H", "--height", required=True, type=int,
@@ -40,7 +40,7 @@ def main():
    parser.add_argument("-S", "--slice", required=True, type=int,
                      help="first sensor image slice width")
    parser.add_argument("-d", "--display", action="store_true", default=False,
-                     help="display interpreted image")
+                     help="display decoded image")
    args = parser.parse_args()
 
    # Laurent Clévy's example:
