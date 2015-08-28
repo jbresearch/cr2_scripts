@@ -392,6 +392,15 @@ class tiff_file():
                spans.add_range(strip_offset, strip_offset + strip_length - 1)
          # store IFD, original offset, and data strips in table
          self.data.append((IFD, ifd_offset, strips))
+         # display image size of this IFD
+         if 256 in IFD and 257 in IFD:
+            w = IFD[256][1][0]
+            h = IFD[257][1][0]
+            print "IFD#%d: image size %dx%d" % (len(self.data)-1, w, h)
+         # display slice information from this IFD if present
+         if self.cr2 and 50752 in IFD:
+            slices = IFD[50752][1]
+            print "IFD#%d: slices are %dx%d + %d" % (len(self.data)-1,slices[0],slices[1],slices[2])
       # display range of bytes used
       print "Bytes read:", spans.display()
       # determine file size
