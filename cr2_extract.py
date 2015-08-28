@@ -28,7 +28,7 @@ def main():
    # interpret user options
    parser = argparse.ArgumentParser()
    parser.add_argument("-i", "--input", required=True,
-                     help="input raw file to process")
+                     help="input raw file to read")
    parser.add_argument("-o", "--output",
                      help="output file basename for embedded data in IFDs")
    parser.add_argument("-d", "--display", action="store_true", default=False,
