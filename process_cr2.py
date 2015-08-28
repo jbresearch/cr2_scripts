@@ -30,11 +30,9 @@ def main():
    parser.add_argument("-i", "--input", required=True,
                      help="input raw file to process")
    parser.add_argument("-o", "--output",
-                     help="output processed raw file")
+                     help="output file basename for embedded data in IFDs")
    parser.add_argument("-d", "--display", action="store_true", default=False,
                      help="print read data")
-   parser.add_argument("-s", "--save-data", action="store_true", default=False,
-                     help="save embedded data in IFDs")
    args = parser.parse_args()
 
    # read input file
@@ -43,11 +41,8 @@ def main():
    if args.display:
       tiff.display(sys.stdout)
    # save data strips as needed
-   if args.save_data:
-      tiff.save_data()
-   # write output file if requested
    if args.output:
-      tiff.write(open(args.output, 'w'))
+      tiff.save_data(args.output)
    return
 
 # main entry point
