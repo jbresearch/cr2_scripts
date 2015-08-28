@@ -33,11 +33,13 @@ def main():
    parser.add_argument("-o", "--output", required=True,
                      help="output processed image file")
    parser.add_argument("-W", "--width", required=True, type=int,
-                     help="image width")
+                     help="sensor image width (from RAW IFD)")
    parser.add_argument("-H", "--height", required=True, type=int,
-                     help="image height")
+                     help="sensor image height (from RAW IFD)")
    parser.add_argument("-S", "--slice", required=True, type=int,
-                     help="image slice width")
+                     help="first sensor image slice width")
+   parser.add_argument("-d", "--display", action="store_true", default=False,
+                     help="display interpreted image")
    args = parser.parse_args()
 
    # determine the number of slices and the width of each slice
@@ -53,26 +55,51 @@ def main():
    for line in out.split('\n'):
       if line.startswith('>> '):
          record = line.split()
+         print record
          f = record[4]
          w = int(record[6])
          h = int(record[8])
          components.append((f,w,h))
-   # assemble raw sensor image from color components
-   I = np.zeros((args.height, args.width), dtype=np.dtype('>H'))
+   # number of color components
+   n = len(components)
+   # Laurent Clévy's example:
+   # Image (w x h): 5184 x 3456
+   # 4 color components (w x h): 0x538 x 0xdbc = 1336 x 3516 each
+   #    interleaved components: 5344 x 3516
+   #    border: 160 x 60 on declared image size
+   # 3 slices (w): 2x 0x6c0 + 0x760 = 2x 1728 + 1888 = 5344
+   #    each slice takes: 432 pixels from each of 4 colors (first two)
+   #                      472 pixels from each of 4 colors (last one)
+   # first assemble color components
+   assert all([h == args.height for f,w,h in components])
+   assert sum([w for f,w,h in components]) == args.width
+   a = np.zeros((args.height, args.width), dtype=np.dtype('>H'))
    for i, (f,w,h) in enumerate(components):
-      a = np.fromfile(f, dtype=np.dtype('>H'))
-      a.shape = (h,w)
-      if len(components) == 2:
-         assert h == args.height
-         I[:,i::2] = a
-      elif len(components) == 4:
-         assert h == args.height/2
-         I[:,i::2] = a
-      else:
-         raise AssertionError('Unsupported number of color components: %d' % len(components))
-   # show user what we've done
-   plt.imshow(I, cmap=plt.cm.gray)
-   plt.show()
+      # read raw data for this color component
+      b = np.fromfile(f, dtype=np.dtype('>H'))
+      b.shape = (h,w)
+      # insert into assembled color image
+      a[:,i::n] = b
+   # next unslice image
+   I = np.zeros((args.height, args.width), dtype=np.dtype('>H'))
+   for i, sw in enumerate(slice_widths):
+      col_s = sum(slice_widths[0:i])
+      col_e = col_s + sw
+      I[:,col_s:col_e] = a.flat[col_s*args.height:col_e*args.height].reshape(args.height,sw)
+   # show user what we've done, as needed
+   if args.display:
+      # linear display
+      plt.figure()
+      plt.imshow(I, cmap=plt.cm.gray)
+      plt.title('%s (linear)' % args.input)
+      # gamma-corrected
+      gamma = 2.2
+      I = np.power(I/float(I.max()), 1/gamma)
+      plt.figure()
+      plt.imshow(I, cmap=plt.cm.gray)
+      plt.title('%s (gamma %g)' % (args.input, gamma))
+      # show everything
+      plt.show()
    return
 
 # main entry point
