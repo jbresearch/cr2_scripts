@@ -81,7 +81,7 @@ def main():
          plt.title('%s (linear)' % f)
 
    # convert raw data color components to lossless JPEG encoded file
-   cmd = 'pvrg-jpeg -ih %d -iw %d -k 7 -p %d -s "%s"' % \
+   cmd = 'pvrg-jpeg -ih %d -iw %d -k 1 -p %d -s "%s"' % \
       (height, width / args.components, args.precision, args.output)
    for i, f in enumerate(components):
       cmd += ' -ci %d %s' % (i+1, f)
