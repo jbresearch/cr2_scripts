@@ -255,6 +255,24 @@ class tiff_file():
 
    ## class methods
 
+   # read TIFF header
+   def read_tiff_header(self, fid, spans):
+      # determine byte order
+      fid.seek(0)
+      tmp = fid.read(2)
+      if tmp == 'II':
+         self.little_endian = True
+      elif tmp == 'MM':
+         self.little_endian = False
+      else:
+         raise ValueError('Unexpected value for byte order: %s' % tmp)
+      # determine TIFF identifier
+      tmp = tiff_file.read_word(fid, 2, False, self.little_endian)
+      assert tmp == 42
+      # add header bytes
+      spans.add_range(0, 8-1)
+      return
+
    # read CR2 header if present
    def read_cr2_header(self, fid, spans):
       self.cr2 = False
@@ -350,19 +368,8 @@ class tiff_file():
    def __init__(self, fid):
       # keep track of range of bytes read
       spans = value_range()
-      # determine byte order
-      tmp = fid.read(2)
-      if tmp == 'II':
-         self.little_endian = True
-      elif tmp == 'MM':
-         self.little_endian = False
-      else:
-         raise ValueError('Unexpected value for byte order: %s' % tmp)
-      # determine TIFF identifier
-      tmp = tiff_file.read_word(fid, 2, False, self.little_endian)
-      assert tmp == 42
-      # add header bytes
-      spans.add_range(0, 8-1)
+      # check if this is a TIFF file
+      self.read_tiff_header(fid, spans)
       # initialize pointer to next IFD offset
       offset_ptr = 4
       # check if this is a CR2 file
@@ -413,6 +420,44 @@ class tiff_file():
       # display range of bytes unused
       print "Bytes not read:", unused.display()
       return
+
+   # determine written length of TIFF directory, including end alignment
+   def get_directory_length(self, IFD, isleaf=False):
+      # length for count and sequence of entries
+      length = 2 + len(IFD)*12
+      # length for offset at end
+      if not isleaf:
+         length += 4
+      # length of any subdirectories present
+      for tag in [34665, 34853, 40965]: # EXIF, GPS, Interoperability
+         if tag in IFD:
+            field_type, values, value_offset = IFD[tag]
+            length += self.get_directory_length(values, True)
+      # length of data for IFD entries
+      for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
+         # determine count
+         if field_type == 2: # ASCII
+            value_count = sum([len(x)+1 for x in values])
+         else:
+            value_count = len(values)
+         # check if the value fits here or if we need data segment
+         if self.field_size[field_type] * value_count > 4:
+            length += tiff_file.align(self.field_size[field_type] * value_count)
+      # done
+      return tiff_file.align(length)
+
+   # write TIFF header
+   def write_tiff_header(self, fid):
+      fid.seek(0)
+      # byte order
+      if self.little_endian:
+         fid.write('II')
+      else:
+         fid.write('MM')
+      # TIFF identifier
+      tiff_file.write_word(42, fid, 2, False, self.little_endian)
+      # return pointers to IFD space and to offset
+      return 8, 4
 
    # write CR2 header if necessary
    def write_cr2_header(self, fid, free_ptr):
@@ -518,18 +563,16 @@ class tiff_file():
 
    # write data to stream
    def write(self, fid):
-      # byte order
-      if self.little_endian:
-         fid.write('II')
-      else:
-         fid.write('MM')
-      # TIFF identifier
-      tiff_file.write_word(42, fid, 2, False, self.little_endian)
-      # initialize pointers to offset and to next free space
-      offset_ptr = 4
-      free_ptr = 8
+      # write TIFF header
+      ifd_ptr, offset_ptr = self.write_tiff_header(fid)
       # write CR2 header if necessary
-      free_ptr, cr2_offset_ptr = self.write_cr2_header(fid, free_ptr)
+      ifd_ptr, cr2_offset_ptr = self.write_cr2_header(fid, ifd_ptr)
+      # determine start of data space
+      data_ptr = ifd_ptr
+      for k, (IFD, ifd_offset, strips) in enumerate(self.data):
+         data_ptr += self.get_directory_length(IFD)
+      # keep track of start of data space to check for overlaps later
+      start_data_ptr = data_ptr
       # write all IFDs and associated strips in file
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          # write data strips if present
@@ -540,7 +583,7 @@ class tiff_file():
             assert len(IFD[279][1]) == len(strips)
             for i, strip in enumerate(strips):
                # determine strip details
-               strip_offset = free_ptr
+               strip_offset = data_ptr
                strip_length = len(strip)
                # check and update IFD data
                assert IFD[279][1][i] == strip_length
@@ -549,23 +592,24 @@ class tiff_file():
                fid.seek(strip_offset)
                fid.write(strip)
                # update free pointer
-               free_ptr = tiff_file.align(free_ptr + strip_length)
+               data_ptr = tiff_file.align(data_ptr + strip_length)
          # if this was the CR2 IFD, write its offset in header
          if self.cr2 and ifd_offset == self.cr2_ifd_offset:
-            print "Writing offset to IFD#%d = %d (0x%08x) as CR2" % (k, free_ptr, free_ptr)
-            self.cr2_ifd_offset = free_ptr
+            print "Writing offset to IFD#%d = %d (0x%08x) as CR2" % (k, ifd_ptr, ifd_ptr)
+            self.cr2_ifd_offset = ifd_ptr
             assert cr2_offset_ptr == 12
             fid.seek(cr2_offset_ptr)
             tiff_file.write_word(self.cr2_ifd_offset, fid, 4, False, self.little_endian)
          # write offset to this IFD
-         ifd_offset = free_ptr
          fid.seek(offset_ptr)
-         tiff_file.write_word(ifd_offset, fid, 4, False, self.little_endian)
+         tiff_file.write_word(ifd_ptr, fid, 4, False, self.little_endian)
          # write TIFF directory
-         offset_ptr, free_ptr = self.write_directory(IFD, fid, ifd_offset)
+         offset_ptr, ifd_ptr = self.write_directory(IFD, fid, ifd_ptr)
       # write null offset to IFD
       fid.seek(offset_ptr)
       tiff_file.write_word(0, fid, 4, False, self.little_endian)
+      # check for overlap of IFD into data space
+      assert ifd_ptr <= start_data_ptr
       return
 
    # print formatted data to stream
