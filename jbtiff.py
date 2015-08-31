@@ -388,15 +388,25 @@ class tiff_file():
          IFD = self.read_directory(fid, ifd_offset, spans)
          # update pointer to next IFD offset
          offset_ptr = ifd_offset + 2 + len(IFD)*12
-         # read data strips if present
+         # read data strips or embedded JPEG if present
          strips = []
+         strip_offsets = []
+         strip_lengths = []
          if 273 in IFD:
             assert 279 in IFD
-            assert len(IFD[273][1]) == len(IFD[279][1])
-            for strip_offset, strip_length in zip(IFD[273][1], IFD[279][1]):
-               fid.seek(strip_offset)
-               strips.append(fid.read(strip_length))
-               spans.add_range(strip_offset, strip_offset + strip_length - 1)
+            assert 513 not in IFD and 514 not in IFD
+            strip_offsets = IFD[273][1]
+            strip_lengths = IFD[279][1]
+         if 513 in IFD:
+            assert 514 in IFD
+            assert 273 not in IFD and 279 not in IFD
+            strip_offsets = IFD[513][1]
+            strip_lengths = IFD[514][1]
+         assert len(strip_offsets) == len(strip_lengths)
+         for strip_offset, strip_length in zip(strip_offsets, strip_lengths):
+            fid.seek(strip_offset)
+            strips.append(fid.read(strip_length))
+            spans.add_range(strip_offset, strip_offset + strip_length - 1)
          # store IFD, original offset, and data strips in table
          self.data.append((IFD, ifd_offset, strips))
          # display image size of this IFD
@@ -577,22 +587,30 @@ class tiff_file():
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          # write data strips if present
          if strips:
-            assert 273 in IFD
-            assert 279 in IFD
-            assert len(IFD[273][1]) == len(strips)
-            assert len(IFD[279][1]) == len(strips)
+            tag_offset = None
+            tag_length = None
+            if 273 in IFD:
+               assert 279 in IFD
+               assert 513 not in IFD and 514 not in IFD
+               tag_offset = 273
+               tag_length = 279
+            if 513 in IFD:
+               assert 514 in IFD
+               assert 273 not in IFD and 279 not in IFD
+               tag_offset = 513
+               tag_length = 514
+            assert tag_offset and tag_length
+            assert len(IFD[tag_offset][1]) == len(strips)
+            assert len(IFD[tag_length][1]) == len(strips)
             for i, strip in enumerate(strips):
-               # determine strip details
-               strip_offset = data_ptr
-               strip_length = len(strip)
                # check and update IFD data
-               assert IFD[279][1][i] == strip_length
-               IFD[273][1][i] = strip_offset
+               assert IFD[tag_length][1][i] == len(strip)
+               IFD[tag_offset][1][i] = data_ptr
                # write data to file
-               fid.seek(strip_offset)
+               fid.seek(data_ptr)
                fid.write(strip)
                # update free pointer
-               data_ptr = tiff_file.align(data_ptr + strip_length)
+               data_ptr = tiff_file.align(data_ptr + len(strip))
          # if this was the CR2 IFD, write its offset in header
          if self.cr2 and ifd_offset == self.cr2_ifd_offset:
             print "Writing offset to IFD#%d = %d (0x%08x) as CR2" % (k, ifd_ptr, ifd_ptr)
