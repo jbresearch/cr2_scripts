@@ -160,7 +160,7 @@ class tiff_file():
 
    # return value aligned to word boundary (increasing as necessary)
    @staticmethod
-   def align(value, word_size=2):
+   def align(value, word_size=4):
       return ((value + word_size - 1) // word_size) * word_size
 
    # read a word of given size (in bytes), endianness, and signed/unsigned state
@@ -321,10 +321,7 @@ class tiff_file():
          if field_type == 1: # BYTE
             values = [tiff_file.read_word(fid, 1, False, self.little_endian) for j in range(value_count)]
          elif field_type == 2: # ASCII
-            tmp = fid.read(value_count)
-            if tmp[-1] == '\0':
-               tmp = tmp[:-1]
-            values = tmp.split('\0')
+            values = fid.read(value_count)
          elif field_type == 3: # SHORT
             values = [tiff_file.read_word(fid, 2, False, self.little_endian) for j in range(value_count)]
          elif field_type == 4: # LONG
@@ -348,19 +345,23 @@ class tiff_file():
          elif field_type == 12: # DOUBLE
             values = [tiff_file.read_float(fid, 8, self.little_endian) for j in range(value_count)]
          # store entry in IFD table with original offset if present
-         IFD[tag] = (field_type, values, value_offset)
+         IFD[tag] = (field_type, value_count, values, value_offset)
       # recursively read sub directories as needed
-      for tag in [34665, 34853, 40965]: # EXIF, GPS, Interoperability
+      for tag in [34665, 34853, 37500, 40965]: # EXIF, GPS, MakerNote, Interoperability
          if tag in IFD:
             # read original entry details
-            field_type, values, value_offset = IFD[tag]
-            assert len(values) == 1
-            assert value_offset == None
+            field_type, value_count, values, value_offset = IFD[tag]
+            # determine offset to subdirectory, based on field type
+            if field_type == 4 and len(values) == 1:
+               assert value_count == 1
+               assert value_offset == None
+               value_offset = values[0]
+            else:
+               assert field_type == 7
             # decode
-            value_offset = values[0]
             values = self.read_directory(fid, value_offset, spans)
             # replace values with subdirectory and original offset
-            IFD[tag] = (field_type, values, value_offset)
+            IFD[tag] = (field_type, value_count, values, value_offset)
       # return directory
       return IFD
 
@@ -395,13 +396,13 @@ class tiff_file():
          if 273 in IFD:
             assert 279 in IFD
             assert 513 not in IFD and 514 not in IFD
-            strip_offsets = IFD[273][1]
-            strip_lengths = IFD[279][1]
+            strip_offsets = IFD[273][2]
+            strip_lengths = IFD[279][2]
          if 513 in IFD:
             assert 514 in IFD
             assert 273 not in IFD and 279 not in IFD
-            strip_offsets = IFD[513][1]
-            strip_lengths = IFD[514][1]
+            strip_offsets = IFD[513][2]
+            strip_lengths = IFD[514][2]
          assert len(strip_offsets) == len(strip_lengths)
          for strip_offset, strip_length in zip(strip_offsets, strip_lengths):
             fid.seek(strip_offset)
@@ -411,12 +412,12 @@ class tiff_file():
          self.data.append((IFD, ifd_offset, strips))
          # display image size of this IFD
          if 256 in IFD and 257 in IFD:
-            w = IFD[256][1][0]
-            h = IFD[257][1][0]
+            w = IFD[256][2][0]
+            h = IFD[257][2][0]
             print "IFD#%d: image size %dx%d" % (len(self.data)-1, w, h)
          # display slice information from this IFD if present
          if self.cr2 and 50752 in IFD:
-            slices = IFD[50752][1]
+            slices = IFD[50752][2]
             print "IFD#%d: slices are %dx%d + %d" % (len(self.data)-1,slices[0],slices[1],slices[2])
       # display range of bytes used
       print "Bytes read:", spans.display()
@@ -447,21 +448,17 @@ class tiff_file():
       # length for offset at end
       if not isleaf:
          length += 4
-      # length of any subdirectories present
-      for tag in [34665, 34853, 40965]: # EXIF, GPS, Interoperability
-         if tag in IFD:
-            field_type, values, value_offset = IFD[tag]
-            length += self.get_directory_length(values, True)
       # length of data for IFD entries
-      for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
-         # determine count
-         if field_type == 2: # ASCII
-            value_count = sum([len(x)+1 for x in values])
+      for i, (tag, (field_type, value_count, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
+         # if this was a subdirectory, recurse
+         if isinstance(values, dict):
+            length += self.get_directory_length(values, True)
          else:
-            value_count = len(values)
-         # check if the value fits here or if we need data segment
-         if self.field_size[field_type] * value_count > 4:
-            length += tiff_file.align(self.field_size[field_type] * value_count)
+            # check count
+            assert value_count == len(values)
+            # check if the value fits here or if we need data segment
+            if self.field_size[field_type] * value_count > 4:
+               length += tiff_file.align(self.field_size[field_type] * value_count)
       # done
       return tiff_file.align(length)
 
@@ -506,25 +503,35 @@ class tiff_file():
          offset_ptr = ifd_offset + 2 + entry_count*12
          free_ptr = tiff_file.align(offset_ptr + 4)
       # write any subdirectories present
-      for tag in [34665, 34853, 40965]: # EXIF, GPS, Interoperability
+      for tag in [34665, 34853, 37500, 40965]: # EXIF, GPS, MakerNote, Interoperability
          if tag in IFD:
-            field_type, values, value_offset = IFD[tag]
+            # read original entry details (values contains subdirecttory)
+            field_type, value_count, values, value_offset = IFD[tag]
+            # write subdirectory at next available space
             value_offset = free_ptr
             free_ptr = self.write_directory(values, fid, value_offset, True)
-            # replace value with offset for this subdirectory
-            IFD[tag] = (field_type, [value_offset], None)
+            # update entries for this subdirectory, based on field type, to write later
+            if field_type == 4:
+               IFD[tag] = (field_type, value_count, [value_offset], None)
+            elif field_type == 7:
+               value_count = free_ptr - value_offset
+               IFD[tag] = (field_type, value_count, None, value_offset)
+            else:
+               raise ValueError('Unsupported field type: %d' % field_type)
       # write IFD entries
-      for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
+      for i, (tag, (field_type, value_count, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
          # make sure we're in the correct position
          fid.seek(ifd_offset + 2 + i*12)
          # write IFD entry information
          tiff_file.write_word(tag, fid, 2, False, self.little_endian)
          tiff_file.write_word(field_type, fid, 2, False, self.little_endian)
-         # determine count
-         if field_type == 2: # ASCII
-            value_count = sum([len(x)+1 for x in values])
-         else:
-            value_count = len(values)
+         # write entry information directly where value was written as subdirectory
+         if not values:
+            tiff_file.write_word(value_count, fid, 4, False, self.little_endian)
+            tiff_file.write_word(value_offset, fid, 4, False, self.little_endian)
+            continue
+         # check count
+         assert value_count == len(values)
          tiff_file.write_word(value_count, fid, 4, False, self.little_endian)
          # check if the value fits here or if we need offset
          value_offset = None
@@ -539,9 +546,7 @@ class tiff_file():
             for value in values:
                tiff_file.write_word(value, fid, 1, False, self.little_endian)
          elif field_type == 2: # ASCII
-            for value in values:
-               fid.write(value)
-               tiff_file.write_word(0, fid, 1, False, self.little_endian)
+            fid.write(values)
          elif field_type == 3: # SHORT
             for value in values:
                tiff_file.write_word(value, fid, 2, False, self.little_endian)
@@ -609,12 +614,12 @@ class tiff_file():
                tag_offset = 513
                tag_length = 514
             assert tag_offset and tag_length
-            assert len(IFD[tag_offset][1]) == len(strips)
-            assert len(IFD[tag_length][1]) == len(strips)
+            assert len(IFD[tag_offset][2]) == len(strips)
+            assert len(IFD[tag_length][2]) == len(strips)
             for i, strip in enumerate(strips):
                # check and update IFD data
-               assert IFD[tag_length][1][i] == len(strip)
-               IFD[tag_offset][1][i] = data_ptr
+               assert IFD[tag_length][2][i] == len(strip)
+               IFD[tag_offset][2][i] = data_ptr
                # write data to file
                fid.seek(data_ptr)
                fid.write(strip)
@@ -642,7 +647,7 @@ class tiff_file():
    # print formatted data to stream
    @staticmethod
    def display_directory(fid, IFD, shift=1):
-      for i, (tag, (field_type, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
+      for i, (tag, (field_type, value_count, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
          print >> fid, " "*3*shift + "Entry %d:" % i
          # display IFD entry information
          if tag in tiff_file.tag_name:
@@ -650,12 +655,15 @@ class tiff_file():
          else:
             print >> fid, " "*3*(shift+1) + "Tag: %d" % tag
          print >> fid, " "*3*(shift+1) + "Type: %d (%s)" % (field_type, tiff_file.field_name[field_type])
+         print >> fid, " "*3*(shift+1) + "Count: %d" % (value_count)
          # display value offset if present
          if value_offset:
             print >> fid, " "*3*(shift+1) + "Pointer: %d (0x%08x)" % (value_offset, value_offset)
          # display value(s)
-         if isinstance(values, list):
-            print >> fid, " "*3*(shift+1) + "Values:", values
+         if isinstance(values, str):
+            print >> fid, " "*3*(shift+1) + "Values: %s" % repr(values)
+         elif isinstance(values, list):
+            print >> fid, " "*3*(shift+1) + "Values: %s" % values
          elif isinstance(values, dict):
             print >> fid, " "*3*(shift+1) + "Subdirectory:"
             # display subdirectory entries
