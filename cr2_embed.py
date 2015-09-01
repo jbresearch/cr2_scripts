@@ -54,7 +54,7 @@ def main():
       del strips[:]
       strips.append(jpeg)
       # update IFD data
-      IFD[279] = (4, [len(jpeg)], 0)
+      IFD[279] = (4, 1, [len(jpeg)], 0)
    # save updated CR2 file
    tiff.write(open(args.output,'w'))
    return
