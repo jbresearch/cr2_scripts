@@ -429,6 +429,15 @@ class tiff_file():
       unused.sub_ranges(spans)
       # display range of bytes unused
       print "Bytes not read:", unused.display()
+      # check content of unused ranges
+      for i, (a,b) in enumerate(unused.data):
+         # read data segment
+         fid.seek(a)
+         n = b-a+1
+         data = fid.read(n)
+         # check if it's all-zero
+         if not all([x=='\0' for x in data]):
+            print "Non-zero data at %d, length %d" % (a,n)
       return
 
    # determine written length of TIFF directory, including end alignment
