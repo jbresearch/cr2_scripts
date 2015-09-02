@@ -23,6 +23,7 @@ import commands
 import numpy as np
 import matplotlib.pyplot as plt
 import Image
+import jbtiff
 
 ## main program
 
@@ -39,6 +40,8 @@ def main():
                      help="sensor image height (from RAW IFD)")
    parser.add_argument("-S", "--slice", required=True, type=int,
                      help="first sensor image slice width")
+   parser.add_argument("-C", "--camera",
+                     help="camera identifier string, for color conversion")
    parser.add_argument("-d", "--display", action="store_true", default=False,
                      help="display decoded image")
    args = parser.parse_args()
@@ -90,9 +93,27 @@ def main():
       col_e = col_s + sw
       I[:,col_s:col_e] = a.flat[col_s*args.height:col_e*args.height].reshape(args.height,sw)
 
+   # convert to XYZ color space if necessary
+   if args.camera:
+      # get necessary transformation data
+      t_black, t_maximum, cam_rgb, offset = jbtiff.tiff_file.color_table[args.camera]
+      # first scale input to [0.0,1.0]
+      a = (I-t_black)/float(t_maximum)
+      # next extract color channels
+      I = np.zeros((args.height, args.width, 3))
+      I[0::2,0::2,0] = a[0::2,0::2] # Red
+      I[0::2,1::2,1] = a[0::2,1::2] # Green 1
+      I[1::2,0::2,1] = a[1::2,0::2] # Green 2
+      I[1::2,1::2,2] = a[1::2,1::2] # Blue
+      # convert to RGB
+      I = np.dot(I, cam_rgb) + offset
+      # scale to 16-bit
+      I *= (1<<16)-1
+
    # save result
-   im = Image.fromarray(I.astype('int32'))
-   im.save(args.output, optimize=True)
+   #im = Image.fromarray(I.astype('int32'))
+   #im.save(args.output, optimize=True)
+   jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'w'))
 
    # show user what we've done, as needed
    if args.display:
