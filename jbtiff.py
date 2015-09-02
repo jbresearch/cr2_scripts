@@ -20,6 +20,7 @@
 
 import os
 import struct
+import numpy as np
 
 class value_range():
 
@@ -154,7 +155,22 @@ class tiff_file():
    dirname = os.path.dirname(os.path.abspath(__file__))
    for line in open(os.path.join(dirname,'tiff-tags.txt'),'r'):
       record = line.split('\t')
-      tag_name[int(record[0])] = record[2]
+      tag = int(record[0])
+      name = record[2]
+      tag_name[tag] = name
+
+   color_table = {}
+   # load color table from text file
+   for line in open(os.path.join(dirname,'raw-color-coeff.txt'),'r'):
+      record = line.split('\t')
+      name = record[0]
+      t_black = eval(record[1])
+      t_maximum = eval(record[2])
+      trans = [int(x)/10000.0 for x in record[3:]]
+      trans = np.pad(trans, (0,12-len(trans)), mode='constant')
+      cam_xyz = trans[0:9].resize((3,3))
+      offset = trans[9:12].resize((3,1))
+      color_table[name] = [t_black, t_maximum, cam_xyz, offset]
 
    ## class functions
 
