@@ -116,6 +116,35 @@ class value_range():
    def display(self):
       return ', '.join(['%d-%d' % (a,b) if b>a else '%d' % a for a,b in self.data])
 
+class pnm_file():
+
+   @staticmethod
+   def write(image, fid):
+      # determine dimensions, channels, and bit depth
+      if len(image.shape) == 2:
+         h,w = image.shape
+         ch = 1
+      elif len(image.shape) == 3:
+         h,w,ch = image.shape
+      else:
+         raise ValueError("Cannot handle input arrays of size %s" % image.shape)
+      if image.dtype == np.dtype('uint8'):
+         depth = 8
+      elif image.dtype == np.dtype('>H'):
+         depth = 16
+      else:
+         raise ValueError("Cannot handle input arrays of type %s" % image.dtype)
+      # write header
+      if ch == 1:
+         print >> fid, "P5"
+      else:
+         print >> fid, "P6"
+      print >> fid, w, h
+      print >> fid, (1<<depth)-1
+      # write pixels
+      image.tofile(fid)
+      return
+
 class tiff_file():
 
    ## constants
