@@ -188,6 +188,10 @@ class tiff_file():
       name = record[2]
       tag_name[tag] = name
 
+   # XYZ to RGB conversion
+   xyz_rgb = np.array([[ 0.412453, 0.357580, 0.180423 ],
+                       [ 0.212671, 0.715160, 0.072169 ],
+                       [ 0.019334, 0.119193, 0.950227 ]])
    color_table = {}
    # load color table from text file
    for line in open(os.path.join(dirname,'raw-color-coeff.txt'),'r'):
@@ -198,8 +202,9 @@ class tiff_file():
       trans = [int(x)/10000.0 for x in record[3:]]
       trans = np.pad(trans, (0,12-len(trans)), mode='constant')
       cam_xyz = trans[0:9].reshape((3,3)).copy()
+      cam_rgb = np.dot(cam_xyz, xyz_rgb)
       offset = trans[9:12].reshape(3).copy()
-      color_table[name] = [t_black, t_maximum, cam_xyz, offset]
+      color_table[name] = [t_black, t_maximum, cam_rgb, offset]
 
    ## class functions
 
