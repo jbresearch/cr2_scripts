@@ -197,8 +197,8 @@ class tiff_file():
       t_maximum = eval(record[2])
       trans = [int(x)/10000.0 for x in record[3:]]
       trans = np.pad(trans, (0,12-len(trans)), mode='constant')
-      cam_xyz = trans[0:9].resize((3,3))
-      offset = trans[9:12].resize((3,1))
+      cam_xyz = trans[0:9].reshape((3,3)).copy()
+      offset = trans[9:12].reshape(3).copy()
       color_table[name] = [t_black, t_maximum, cam_xyz, offset]
 
    ## class functions
