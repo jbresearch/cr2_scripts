@@ -96,17 +96,27 @@ def main():
    # convert to XYZ color space if necessary
    if args.camera:
       # get necessary transformation data
-      t_black, t_maximum, cam_rgb, offset = jbtiff.tiff_file.color_table[args.camera]
+      t_black, t_maximum, rgb_cam = jbtiff.tiff_file.color_table[args.camera]
       # first scale input to [0.0,1.0]
       a = (I-t_black)/float(t_maximum)
-      # next extract color channels
+      # next extract color channels and interpolate missing data (nearest neighbour)
       I = np.zeros((args.height, args.width, 3))
-      I[0::2,0::2,0] = a[0::2,0::2] # Red
-      I[0::2,1::2,1] = a[0::2,1::2] # Green 1
-      I[1::2,0::2,1] = a[1::2,0::2] # Green 2
-      I[1::2,1::2,2] = a[1::2,1::2] # Blue
-      # convert to RGB
-      I = np.dot(I, cam_rgb) + offset
+      for i in [0,1]:
+         for j in [0,1]:
+            I[i::2,j::2,0] = a[0::2,0::2] # Red
+      for i in [0,1]:
+         I[i::2,1::2,1] = a[0::2,1::2] # Green 1
+         I[i::2,0::2,1] = a[1::2,0::2] # Green 2
+      for i in [0,1]:
+         for j in [0,1]:
+            I[i::2,j::2,2] = a[1::2,1::2] # Blue
+      print rgb_cam
+      I = np.dot(I, rgb_cam.transpose())
+      print I.min(), I.max()
+      # limit values
+      np.clip(I, 0.0, 1.0, I)
+      # gamma correction
+      I = jbtiff.tiff_file.srgb_gamma(I)
       # scale to 16-bit
       I *= (1<<16)-1
 
