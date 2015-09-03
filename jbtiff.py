@@ -210,6 +210,12 @@ class tiff_file():
 
    ## class functions
 
+   # transform linear RGB values to gamma-corrected sRGB values
+   @staticmethod
+   def srgb_gamma(r):
+      return (r <  0.00304) * (r*12.92) + \
+             (r >= 0.00304) * (pow(r,2.5/6)*1.055-0.055)
+
    # return value aligned to word boundary (increasing as necessary)
    @staticmethod
    def align(value, word_size=4):
