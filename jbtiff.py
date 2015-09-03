@@ -204,9 +204,10 @@ class tiff_file():
       if len(trans) == 9:
          cam_xyz = np.array(trans).reshape((3,3))
          cam_rgb = np.dot(cam_xyz, xyz_rgb)
+         #pre_mul = 1/cam_rgb.sum(axis=1)
          #cam_rgb /= cam_rgb.sum(axis=1, keepdims=True)
          rgb_cam = np.linalg.pinv(cam_rgb)
-         #rgb_cam /= rgb_cam.max()
+         #color_table[name] = [t_black, t_maximum, pre_mul, rgb_cam]
          color_table[name] = [t_black, t_maximum, rgb_cam]
 
    ## class functions
