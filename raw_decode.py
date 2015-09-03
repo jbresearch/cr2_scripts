@@ -96,24 +96,44 @@ def main():
    # convert to XYZ color space if necessary
    if args.camera:
       # get necessary transformation data
+      #t_black, t_maximum, pre_mul, rgb_cam = jbtiff.tiff_file.color_table[args.camera]
       t_black, t_maximum, rgb_cam = jbtiff.tiff_file.color_table[args.camera]
-      # first scale input to [0.0,1.0]
-      a = (I-t_black)/float(t_maximum)
-      # next extract color channels and interpolate missing data (nearest neighbour)
+      # extract references to color channels)
+      R  = I[0::2,0::2] # Red
+      G1 = I[0::2,1::2] # Green 1
+      G2 = I[1::2,0::2] # Green 2
+      B  = I[1::2,1::2] # Blue
+      # determine black levels for each channel
+      Rb = np.median(R[:,0:4])
+      G1b = np.median(G1[:,0:4])
+      G2b = np.median(G2[:,0:4])
+      Bb = np.median(B[:,0:4])
+      # subtract black level and scale each channel to [0.0,1.0]
+      print "Scaling with black levels (%d,%d,%d,%d), saturation %d" % (Rb,G1b,G2b,Bb,t_maximum)
+      R  = (R  - Rb)/float(t_maximum - t_black)
+      G1 = (G1 - G1b)/float(t_maximum - t_black)
+      G2 = (G2 - G2b)/float(t_maximum - t_black)
+      B  = (B  - Bb)/float(t_maximum - t_black)
+      # apply pre-multipliers
+      #print "Scaling with multipliers (%0.3f,%0.3f,%0.3f)" % (pre_mul[0], pre_mul[1], pre_mul[2])
+      #R *= pre_mul[0]
+      #G1 *= pre_mul[1]
+      #G2 *= pre_mul[1]
+      #B *= pre_mul[2]
+      # copy color channels and interpolate missing data (nearest neighbour)
       I = np.zeros((args.height, args.width, 3))
       for i in [0,1]:
          for j in [0,1]:
-            I[i::2,j::2,0] = a[0::2,0::2] # Red
+            I[i::2,j::2,0] = R # Red
       for i in [0,1]:
-         I[i::2,1::2,1] = a[0::2,1::2] # Green 1
-         I[i::2,0::2,1] = a[1::2,0::2] # Green 2
+         I[i::2,1::2,1] = G1 # Green 1
+         I[i::2,0::2,1] = G2 # Green 2
       for i in [0,1]:
          for j in [0,1]:
-            I[i::2,j::2,2] = a[1::2,1::2] # Blue
+            I[i::2,j::2,2] = B # Blue
       # convert from camera color space to linear RGB D65 space
-      print rgb_cam
+      #rgb_cam /= rgb_cam.sum(axis=1, keepdims=True)
       I = np.dot(I, rgb_cam.transpose())
-      print I.min(), I.max()
       # limit values
       np.clip(I, 0.0, 1.0, I)
       # apply sRGB gamma correction
