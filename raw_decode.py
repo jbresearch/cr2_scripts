@@ -110,12 +110,13 @@ def main():
       for i in [0,1]:
          for j in [0,1]:
             I[i::2,j::2,2] = a[1::2,1::2] # Blue
+      # convert from camera color space to linear RGB D65 space
       print rgb_cam
       I = np.dot(I, rgb_cam.transpose())
       print I.min(), I.max()
       # limit values
       np.clip(I, 0.0, 1.0, I)
-      # gamma correction
+      # apply sRGB gamma correction
       I = jbtiff.tiff_file.srgb_gamma(I)
       # scale to 16-bit
       I *= (1<<16)-1
