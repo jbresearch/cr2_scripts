@@ -110,10 +110,10 @@ def main():
       Bb = np.median(B[:,0:4])
       # subtract black level and scale each channel to [0.0,1.0]
       print "Scaling with black levels (%d,%d,%d,%d), saturation %d" % (Rb,G1b,G2b,Bb,t_maximum)
-      R  = (R  - Rb)/float(t_maximum - t_black)
-      G1 = (G1 - G1b)/float(t_maximum - t_black)
-      G2 = (G2 - G2b)/float(t_maximum - t_black)
-      B  = (B  - Bb)/float(t_maximum - t_black)
+      R  = (R  - Rb)/float(t_maximum - Rb)
+      G1 = (G1 - G1b)/float(t_maximum - G1b)
+      G2 = (G2 - G2b)/float(t_maximum - G2b)
+      B  = (B  - Bb)/float(t_maximum - Bb)
       # apply pre-multipliers
       #print "Scaling with multipliers (%0.3f,%0.3f,%0.3f)" % (pre_mul[0], pre_mul[1], pre_mul[2])
       #R *= pre_mul[0]
