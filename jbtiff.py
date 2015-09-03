@@ -200,11 +200,13 @@ class tiff_file():
       t_black = eval(record[1])
       t_maximum = eval(record[2])
       trans = [int(x)/10000.0 for x in record[3:]]
-      trans = np.pad(trans, (0,12-len(trans)), mode='constant')
-      cam_xyz = trans[0:9].reshape((3,3)).copy()
-      cam_rgb = np.dot(cam_xyz, xyz_rgb)
-      offset = trans[9:12].reshape(3).copy()
-      color_table[name] = [t_black, t_maximum, cam_rgb, offset]
+      # handle only 3-color transforms
+      if len(trans) == 9:
+         cam_xyz = np.array(trans).reshape((3,3))
+         cam_rgb = np.dot(cam_xyz, xyz_rgb)
+         rgb_cam = np.linalg.pinv(cam_rgb)
+         rgb_cam /= rgb_cam.max()
+         color_table[name] = [t_black, t_maximum, rgb_cam]
 
    ## class functions
 
