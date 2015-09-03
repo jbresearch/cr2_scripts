@@ -125,7 +125,6 @@ def main():
          for j in [0,1]:
             I[i::2,j::2,2] = B # Blue
       # convert from camera color space to linear RGB D65 space
-      #rgb_cam /= rgb_cam.sum(axis=1, keepdims=True)
       I = np.dot(I, rgb_cam.transpose())
       # limit values
       np.clip(I, 0.0, 1.0, I)
