@@ -96,7 +96,6 @@ def main():
    # convert to XYZ color space if necessary
    if args.camera:
       # get necessary transformation data
-      #t_black, t_maximum, pre_mul, rgb_cam = jbtiff.tiff_file.color_table[args.camera]
       t_black, t_maximum, rgb_cam = jbtiff.tiff_file.color_table[args.camera]
       # extract references to color channels)
       R  = I[0::2,0::2] # Red
@@ -114,12 +113,6 @@ def main():
       G1 = (G1 - G1b)/float(t_maximum - G1b)
       G2 = (G2 - G2b)/float(t_maximum - G2b)
       B  = (B  - Bb)/float(t_maximum - Bb)
-      # apply pre-multipliers
-      #print "Scaling with multipliers (%0.3f,%0.3f,%0.3f)" % (pre_mul[0], pre_mul[1], pre_mul[2])
-      #R *= pre_mul[0]
-      #G1 *= pre_mul[1]
-      #G2 *= pre_mul[1]
-      #B *= pre_mul[2]
       # copy color channels and interpolate missing data (nearest neighbour)
       I = np.zeros((args.height, args.width, 3))
       for i in [0,1]:
