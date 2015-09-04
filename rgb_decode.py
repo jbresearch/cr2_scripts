@@ -35,6 +35,8 @@ def main():
                      help="input sensor image file to decode (PGM)")
    parser.add_argument("-o", "--output", required=True,
                      help="output color image file (PPM)")
+   parser.add_argument("-C", "--camera",
+                     help="camera identifier string for color table lookup")
    parser.add_argument("-d", "--display", action="store_true", default=False,
                      help="display decoded image")
    args = parser.parse_args()
@@ -43,7 +45,10 @@ def main():
    tiff = jbtiff.tiff_file(open(args.raw, 'r'))
    width,height = tiff.get_sensor_size()
    border = tiff.get_border()
-   model = tiff.get_model(0)
+   if args.camera:
+      model = args.camera
+   else:
+      model = tiff.get_model(0)
 
    # load sensor image
    I = jbtiff.pnm_file.read(open(args.input,'r'))

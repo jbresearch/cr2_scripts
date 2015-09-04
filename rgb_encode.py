@@ -37,6 +37,8 @@ def main():
                      help="output sensor image file (PGM)")
    parser.add_argument("-B", "--black", required=True, type=int,
                      help="black level (same for all channels)")
+   parser.add_argument("-C", "--camera",
+                     help="camera identifier string for color table lookup")
    parser.add_argument("-d", "--display", action="store_true", default=False,
                      help="display encoded image")
    args = parser.parse_args()
@@ -45,7 +47,10 @@ def main():
    tiff = jbtiff.tiff_file(open(args.raw, 'r'))
    width,height = tiff.get_sensor_size()
    border = tiff.get_border()
-   model = tiff.get_model(0)
+   if args.camera:
+      model = args.camera
+   else:
+      model = tiff.get_model(0)
    # determine image size without border
    x1,y1,x2,y2 = border
    iwidth = x2-x1+1
