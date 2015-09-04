@@ -51,8 +51,8 @@ def main():
    assert I.shape == (height,width) # image size must be exact
 
    # get necessary transformation data
-   t_black, t_maximum, rgb_cam = jbtiff.tiff_file.color_table[model]
-   # extract references to color channels)
+   t_black, t_maximum, cam_rgb = jbtiff.tiff_file.color_table[model]
+   # extract references to color channels
    R  = I[0::2,0::2] # Red
    G1 = I[0::2,1::2] # Green 1
    G2 = I[1::2,0::2] # Green 2
@@ -80,6 +80,7 @@ def main():
       for j in [0,1]:
          I[i::2,j::2,2] = B # Blue
    # convert from camera color space to linear RGB D65 space
+   rgb_cam = np.linalg.pinv(cam_rgb)
    I = np.dot(I, rgb_cam.transpose())
    # limit values
    np.clip(I, 0.0, 1.0, I)
