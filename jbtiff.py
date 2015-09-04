@@ -337,6 +337,15 @@ class tiff_file():
 
    ## class methods
 
+   # get camera model from given IFD, if present
+   def get_model(self, ifd_index):
+      IFD = self.data[ifd_index][0]
+      if 272 in IFD:
+         model = IFD[272][2].strip('\x00')
+         print "IFD#%d: camera model '%s'" % (ifd_index, model)
+         return model
+      return None
+
    # get image size from given IFD, if present
    def get_image_size(self, ifd_index):
       IFD = self.data[ifd_index][0]
