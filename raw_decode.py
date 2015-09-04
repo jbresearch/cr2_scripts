@@ -22,7 +22,6 @@ import argparse
 import commands
 import numpy as np
 import matplotlib.pyplot as plt
-import Image
 import jbtiff
 
 ## main program
@@ -134,8 +133,6 @@ def main():
       I *= (1<<16)-1
 
    # save result
-   #im = Image.fromarray(I.astype('int32'))
-   #im.save(args.output, optimize=True)
    jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'w'))
 
    # show user what we've done, as needed
