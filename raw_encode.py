@@ -18,6 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+import os
 import argparse
 import commands
 import numpy as np
@@ -92,6 +93,10 @@ def main():
    st, out = commands.getstatusoutput(cmd)
    if st != 0:
       raise AssertionError('Error encoding JPEG file: %s' % out)
+
+   # remove temporary files
+   for i, f in enumerate(components):
+      os.remove(f)
 
    # show user what we've done, as needed
    if args.display:

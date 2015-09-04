@@ -18,6 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
+import os
 import argparse
 import commands
 import numpy as np
@@ -80,6 +81,8 @@ def main():
       b.shape = (h,w)
       # insert into assembled color image
       a[:,i::n] = b
+      # remove temporary file
+      os.remove(f)
 
    # make a list of the width of each slice
    slice_widths = [slices[1]] * slices[0] + [slices[2]]
