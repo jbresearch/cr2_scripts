@@ -42,6 +42,7 @@ def main():
    # obtain required parameters from RAW file
    tiff = jbtiff.tiff_file(open(args.raw, 'r'))
    width,height = tiff.get_image_size(3)
+   border = tiff.get_border()
    model = tiff.get_model(0)
 
    # load sensor image
@@ -84,6 +85,9 @@ def main():
    np.clip(I, 0.0, 1.0, I)
    # apply sRGB gamma correction
    I = jbtiff.tiff_file.srgb_gamma(I)
+   # cut border
+   x1,y1,x2,y2 = border
+   I = I[y1:y2+1,x1:x2+1]
    # scale to 16-bit
    I *= (1<<16)-1
 
