@@ -29,16 +29,12 @@ import jbtiff
 def main():
    # interpret user options
    parser = argparse.ArgumentParser()
+   parser.add_argument("-r", "--raw", required=True,
+                     help="input RAW file for image parameters")
    parser.add_argument("-i", "--input", required=True,
                      help="input JPEG lossless raw data file to decode")
    parser.add_argument("-o", "--output", required=True,
                      help="output decoded image file (use PNG extension)")
-   parser.add_argument("-W", "--width", required=True, type=int,
-                     help="sensor image width (from RAW IFD)")
-   parser.add_argument("-H", "--height", required=True, type=int,
-                     help="sensor image height (from RAW IFD)")
-   parser.add_argument("-S", "--slice", required=True, type=int,
-                     help="first sensor image slice width")
    parser.add_argument("-d", "--display", action="store_true", default=False,
                      help="display decoded image")
    args = parser.parse_args()
@@ -51,6 +47,11 @@ def main():
    # 3 slices (w): 2x 0x6c0 + 0x760 = 2x 1728 + 1888 = 5344
    #    each slice takes: 432 pixels from each of 4 colors (first two)
    #                      472 pixels from each of 4 colors (last one)
+
+   # obtain required parameters from RAW file
+   tiff = jbtiff.tiff_file(open(args.raw, 'r'))
+   width,height = tiff.get_image_size(3)
+   slices = tiff.get_slices(3)
 
    # convert lossless JPEG encoded input file to raw data
    cmd = 'pvrg-jpeg -d -s "%s" -o parts' % args.input
@@ -70,9 +71,9 @@ def main():
    # number of color components
    n = len(components)
    # first assemble color components
-   assert all([h == args.height for f,w,h in components])
-   assert sum([w for f,w,h in components]) == args.width
-   a = np.zeros((args.height, args.width), dtype=np.dtype('>H'))
+   assert all([h == height for f,w,h in components])
+   assert sum([w for f,w,h in components]) == width
+   a = np.zeros((height, width), dtype=np.dtype('>H'))
    for i, (f,w,h) in enumerate(components):
       # read raw data for this color component
       b = np.fromfile(f, dtype=np.dtype('>H'))
@@ -80,15 +81,15 @@ def main():
       # insert into assembled color image
       a[:,i::n] = b
 
-   # determine the number of slices and the width of each slice
-   slices = (args.width + args.slice - 1) // args.slice
-   slice_widths = [args.slice] * (slices-1) + [args.width - args.slice*(slices-1)]
+   # make a list of the width of each slice
+   slice_widths = [slices[1]] * slices[0] + [slices[2]]
+   assert sum(slice_widths) == width
    # next unslice image
-   I = np.zeros((args.height, args.width), dtype=np.dtype('>H'))
+   I = np.zeros((height, width), dtype=np.dtype('>H'))
    for i, sw in enumerate(slice_widths):
       col_s = sum(slice_widths[0:i])
       col_e = col_s + sw
-      I[:,col_s:col_e] = a.flat[col_s*args.height:col_e*args.height].reshape(args.height,sw)
+      I[:,col_s:col_e] = a.flat[col_s*height:col_e*height].reshape(height,sw)
 
    # save result
    jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'w'))
