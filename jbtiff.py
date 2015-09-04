@@ -236,8 +236,14 @@ class tiff_file():
    # transform linear RGB values to gamma-corrected sRGB values
    @staticmethod
    def srgb_gamma(r):
-      return (r <  0.00304) * (r*12.92) + \
-             (r >= 0.00304) * (pow(r,2.5/6)*1.055-0.055)
+      return (r <= 0.0031308) * (12.92 * r) + \
+             (r >  0.0031308) * (1.055 * pow(r,1/2.4) - 0.055)
+
+   # transform gamma-corrected sRGB values to linear RGB values
+   @staticmethod
+   def srgb_gamma_inverse(r):
+      return (r <= 0.04045) * (r / 12.92) + \
+             (r >  0.04045) * pow((r+0.055)/1.055,2.4)
 
    # return value aligned to word boundary (increasing as necessary)
    @staticmethod
