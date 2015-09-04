@@ -22,7 +22,7 @@ import argparse
 import commands
 import numpy as np
 import matplotlib.pyplot as plt
-import Image
+import jbtiff
 
 ## main program
 
@@ -46,10 +46,9 @@ def main():
    # See raw_decode.py for color components & slicing example
 
    # load sensor image
-   im = Image.open(args.input)
-   assert len(im.mode) == 1 # must be a one-channel image
-   (width,height) = im.size
-   I = np.asarray(im).reshape(height,width) # array is read-only!
+   I = jbtiff.pnm_file.read(open(args.input,'r'))
+   assert len(I.shape) == 2 # must be a one-channel image
+   (height,width) = I.shape
 
    # determine the number of slices and the width of each slice
    slices = (width + args.slice - 1) // args.slice
