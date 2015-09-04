@@ -337,6 +337,36 @@ class tiff_file():
 
    ## class methods
 
+   # get image size from given IFD, if present
+   def get_image_size(self, ifd_index):
+      IFD = self.data[ifd_index][0]
+      if 256 in IFD and 257 in IFD:
+         w = IFD[256][2][0]
+         h = IFD[257][2][0]
+         print "IFD#%d: image size %dx%d" % (ifd_index, w, h)
+         return w,h
+      return None
+
+   # get slice information from given IFD, if present
+   def get_slices(self, ifd_index):
+      IFD = self.data[ifd_index][0]
+      if self.cr2 and 50752 in IFD:
+         slices = IFD[50752][2]
+         print "IFD#%d: slices are %dx%d + %d" % \
+            (ifd_index,slices[0],slices[1],slices[2])
+         return slices
+      return None
+
+   # get border information from given IFD, if present
+   def get_border(self, ifd_index):
+      IFD = self.data[ifd_index][0]
+      if self.cr2 and 34665 in IFD and 37500 in IFD[34665][2] and 0x00e0 in IFD[34665][2][37500][2]:
+         sensor = IFD[34665][2][37500][2][0x00e0][2]
+         print "IFD#%d: sensor borders are %d,%d,%d,%d" % \
+            (ifd_index,sensor[5], sensor[6], sensor[7], sensor[8])
+         return sensor[5:9]
+      return None
+
    # read TIFF header
    def read_tiff_header(self, fid, spans):
       # determine byte order
@@ -492,19 +522,6 @@ class tiff_file():
             spans.add_range(strip_offset, strip_offset + strip_length - 1)
          # store IFD, original offset, and data strips in table
          self.data.append((IFD, ifd_offset, strips))
-         # display image size of this IFD
-         if 256 in IFD and 257 in IFD:
-            w = IFD[256][2][0]
-            h = IFD[257][2][0]
-            print "IFD#%d: image size %dx%d" % (len(self.data)-1, w, h)
-         # display slice information from this IFD if present
-         if self.cr2 and 50752 in IFD:
-            slices = IFD[50752][2]
-            print "IFD#%d: slices are %dx%d + %d" % (len(self.data)-1,slices[0],slices[1],slices[2])
-         # display border information from this IFD if present
-         if self.cr2 and 34665 in IFD and 37500 in IFD[34665][2] and 0x00e0 in IFD[34665][2][37500][2]:
-            sensor = IFD[34665][2][37500][2][0x00e0][2]
-            print "IFD#%d: sensor borders are %d,%d,%d,%d" % (len(self.data)-1,sensor[5], sensor[6], sensor[7], sensor[8])
       # display range of bytes used
       print "Bytes read:", spans.display()
       # determine file size
