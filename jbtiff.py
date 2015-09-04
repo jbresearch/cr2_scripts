@@ -708,9 +708,9 @@ class tiff_file():
          print >> fid, " "*3*shift + "Entry %d:" % i
          # display IFD entry information
          if tag in tiff_file.tag_name:
-            print >> fid, " "*3*(shift+1) + "Tag: %d (%s)" % (tag, tiff_file.tag_name[tag])
+            print >> fid, " "*3*(shift+1) + "Tag: %d (0x%04x) [%s]" % (tag, tag, tiff_file.tag_name[tag])
          else:
-            print >> fid, " "*3*(shift+1) + "Tag: %d" % tag
+            print >> fid, " "*3*(shift+1) + "Tag: %d (0x%04x)" % (tag, tag)
          print >> fid, " "*3*(shift+1) + "Type: %d (%s)" % (field_type, tiff_file.field_name[field_type])
          print >> fid, " "*3*(shift+1) + "Count: %d" % (value_count)
          # display value offset if present
