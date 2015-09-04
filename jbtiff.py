@@ -356,8 +356,9 @@ class tiff_file():
          return w,h
       return None
 
-   # get slice information from given IFD, if present
-   def get_slices(self, ifd_index):
+   # get slice information from RAW IFD, if present
+   def get_slices(self):
+      ifd_index = 3
       IFD = self.data[ifd_index][0]
       if self.cr2 and 50752 in IFD:
          slices = IFD[50752][2]
@@ -366,8 +367,9 @@ class tiff_file():
          return slices
       return None
 
-   # get border information from given IFD, if present
-   def get_border(self, ifd_index):
+   # get border information from RAW IFD, if present
+   def get_border(self):
+      ifd_index = 3
       IFD = self.data[ifd_index][0]
       if self.cr2 and 34665 in IFD and 37500 in IFD[34665][2] and 0x00e0 in IFD[34665][2][37500][2]:
          sensor = IFD[34665][2][37500][2][0x00e0][2]
