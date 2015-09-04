@@ -88,6 +88,11 @@ def main():
    # cut border
    x1,y1,x2,y2 = border
    I = I[y1:y2+1,x1:x2+1]
+   # show colour image, as needed
+   if args.display:
+      plt.figure()
+      plt.imshow(I.astype('float'))
+      plt.title('%s' % args.input)
    # scale to 16-bit
    I *= (1<<16)-1
 
@@ -96,11 +101,6 @@ def main():
 
    # show user what we've done, as needed
    if args.display:
-      # linear display
-      plt.figure()
-      plt.imshow(I)
-      plt.title('%s' % args.input)
-      # show everything
       plt.show()
    return
 
