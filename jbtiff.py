@@ -229,8 +229,7 @@ class tiff_file():
       if len(trans) == 9:
          cam_xyz = np.array(trans).reshape((3,3))
          cam_rgb = np.dot(cam_xyz, xyz_rgb)
-         rgb_cam = np.linalg.pinv(cam_rgb)
-         color_table[name] = [t_black, t_maximum, rgb_cam]
+         color_table[name] = [t_black, t_maximum, cam_rgb]
 
    ## class functions
 
