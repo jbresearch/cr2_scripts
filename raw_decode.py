@@ -51,7 +51,7 @@ def main():
    # obtain required parameters from RAW file
    tiff = jbtiff.tiff_file(open(args.raw, 'r'))
    width,height = tiff.get_image_size(3)
-   slices = tiff.get_slices(3)
+   slices = tiff.get_slices()
 
    # convert lossless JPEG encoded input file to raw data
    cmd = 'pvrg-jpeg -d -s "%s" -o parts' % args.input
