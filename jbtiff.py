@@ -501,6 +501,10 @@ class tiff_file():
          if self.cr2 and 50752 in IFD:
             slices = IFD[50752][2]
             print "IFD#%d: slices are %dx%d + %d" % (len(self.data)-1,slices[0],slices[1],slices[2])
+         # display border information from this IFD if present
+         if self.cr2 and 34665 in IFD and 37500 in IFD[34665][2] and 0x00e0 in IFD[34665][2][37500][2]:
+            sensor = IFD[34665][2][37500][2][0x00e0][2]
+            print "IFD#%d: sensor borders are %d,%d,%d,%d" % (len(self.data)-1,sensor[5], sensor[6], sensor[7], sensor[8])
       # display range of bytes used
       print "Bytes read:", spans.display()
       # determine file size
