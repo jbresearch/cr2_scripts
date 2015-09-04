@@ -119,6 +119,30 @@ class value_range():
 class pnm_file():
 
    @staticmethod
+   def read(fid):
+      # read header (assume separate lines for id, size, and depth)
+      tmp = fid.readline().strip()
+      if tmp == "P5":
+         ch = 1
+      elif tmp == "P6":
+         ch = 3
+      else:
+         raise ValueError("Cannot handle files of type %s" % tmp)
+      tmp = fid.readline().strip()
+      w,h = map(int, tmp.split())
+      tmp = fid.readline().strip()
+      if tmp == "255":
+         dtype = np.dtype('uint8')
+      elif tmp == "65535":
+         dtype = np.dtype('>H')
+      else:
+         raise ValueError("Cannot handle files with %s colors" % tmp)
+      # read pixels
+      I = np.fromfile(fid, dtype=dtype)
+      I = I.reshape((h,w,ch)).squeeze()
+      return I
+
+   @staticmethod
    def write(image, fid):
       # determine dimensions, channels, and bit depth
       if len(image.shape) == 2:
