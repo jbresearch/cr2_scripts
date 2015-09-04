@@ -65,7 +65,7 @@ def main():
       raise ValueError("Cannot handle input arrays of type %s" % I.dtype)
    I = I / float((1<<depth)-1)
    # add border
-   np.pad(I, ((y1,height-y2-1),(x1,width-x2-1)), mode='constant')
+   I = np.pad(I, ((y1,height-y2-1),(x1,width-x2-1),(0,0)), mode='constant')
    # invert sRGB gamma correction
    I = jbtiff.tiff_file.srgb_gamma_inverse(I)
 
