@@ -184,9 +184,10 @@ class tiff_file():
    dirname = os.path.dirname(os.path.abspath(__file__))
    for line in open(os.path.join(dirname,'tiff-tags.txt'),'r'):
       record = line.split('\t')
-      tag = int(record[0])
-      name = record[2]
-      tag_name[tag] = name
+      parent = int(record[0])
+      tag = int(record[1])
+      name = record[3]
+      tag_name[(parent,tag)] = name
 
    # XYZ to RGB conversion
    xyz_rgb = np.array([[ 0.412453, 0.357580, 0.180423 ],
@@ -703,12 +704,12 @@ class tiff_file():
 
    # print formatted data to stream
    @staticmethod
-   def display_directory(fid, IFD, shift=1):
+   def display_directory(fid, IFD, parent=0, shift=1):
       for i, (tag, (field_type, value_count, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
          print >> fid, " "*3*shift + "Entry %d:" % i
          # display IFD entry information
-         if tag in tiff_file.tag_name:
-            print >> fid, " "*3*(shift+1) + "Tag: %d (0x%04x) [%s]" % (tag, tag, tiff_file.tag_name[tag])
+         if (parent,tag) in tiff_file.tag_name:
+            print >> fid, " "*3*(shift+1) + "Tag: %d (0x%04x) [%s]" % (tag, tag, tiff_file.tag_name[(parent,tag)])
          else:
             print >> fid, " "*3*(shift+1) + "Tag: %d (0x%04x)" % (tag, tag)
          print >> fid, " "*3*(shift+1) + "Type: %d (%s)" % (field_type, tiff_file.field_name[field_type])
@@ -724,7 +725,7 @@ class tiff_file():
          elif isinstance(values, dict):
             print >> fid, " "*3*(shift+1) + "Subdirectory:"
             # display subdirectory entries
-            tiff_file.display_directory(fid, values, shift+1)
+            tiff_file.display_directory(fid, values, tag, shift+1)
          else:
             raise AssertionError("Unknown value type")
       return
