@@ -29,12 +29,12 @@ import jbtiff
 def main():
    # interpret user options
    parser = argparse.ArgumentParser()
+   parser.add_argument("-r", "--raw", required=True,
+                     help="input RAW file for image parameters")
    parser.add_argument("-i", "--input", required=True,
-                     help="input image file to encode")
+                     help="input sensor image file to encode")
    parser.add_argument("-o", "--output", required=True,
                      help="output JPEG lossless raw data file")
-   parser.add_argument("-S", "--slice", required=True, type=int,
-                     help="first sensor image slice width")
    parser.add_argument("-C", "--components", required=True, type=int,
                      help="number of color components to create")
    parser.add_argument("-P", "--precision", required=True, type=int,
@@ -45,14 +45,19 @@ def main():
 
    # See raw_decode.py for color components & slicing example
 
+   # obtain required parameters from RAW file
+   tiff = jbtiff.tiff_file(open(args.raw, 'r'))
+   width,height = tiff.get_image_size(3)
+   slices = tiff.get_slices()
+
    # load sensor image
    I = jbtiff.pnm_file.read(open(args.input,'r'))
    assert len(I.shape) == 2 # must be a one-channel image
-   (height,width) = I.shape
+   assert I.shape == (height,width) # image size must be exact
 
-   # determine the number of slices and the width of each slice
-   slices = (width + args.slice - 1) // args.slice
-   slice_widths = [args.slice] * (slices-1) + [width - args.slice*(slices-1)]
+   # make a list of the width of each slice
+   slice_widths = [slices[1]] * slices[0] + [slices[2]]
+   assert sum(slice_widths) == width
    # first slice image
    a = np.zeros((height, width), dtype=np.dtype('>H'))
    for i, sw in enumerate(slice_widths):
@@ -77,7 +82,7 @@ def main():
       if args.display:
          plt.figure()
          plt.imshow(b, cmap=plt.cm.gray)
-         plt.title('%s (linear)' % f)
+         plt.title('%s' % f)
 
    # convert raw data color components to lossless JPEG encoded file
    cmd = 'pvrg-jpeg -ih %d -iw %d -k 1 -p %d -s "%s"' % \
