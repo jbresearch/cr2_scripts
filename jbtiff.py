@@ -369,13 +369,13 @@ class tiff_file():
 
    # get border information from RAW IFD, if present
    def get_border(self):
-      ifd_index = 3
+      ifd_index = 0
       IFD = self.data[ifd_index][0]
       if self.cr2 and 34665 in IFD and 37500 in IFD[34665][2] and 0x00e0 in IFD[34665][2][37500][2]:
          sensor = IFD[34665][2][37500][2][0x00e0][2]
          print "IFD#%d: sensor borders are %d,%d,%d,%d" % \
             (ifd_index,sensor[5], sensor[6], sensor[7], sensor[8])
-         return sensor[5:9]
+         return tuple(sensor[5:9])
       return None
 
    # read TIFF header
