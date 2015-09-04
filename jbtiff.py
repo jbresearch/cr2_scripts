@@ -128,8 +128,16 @@ class pnm_file():
          ch = 3
       else:
          raise ValueError("Cannot handle files of type %s" % tmp)
-      tmp = fid.readline().strip()
-      w,h = map(int, tmp.split())
+      tmp = fid.readline().strip().split()
+      if len(tmp) == 2: # width,height in same line
+         w = int(tmp[0])
+         h = int(tmp[1])
+      else: # width, height in separate lines
+         assert len(tmp) == 1
+         w = int(tmp[0])
+         tmp = fid.readline().strip().split()
+         assert len(tmp) == 1
+         h = int(tmp[0])
       tmp = fid.readline().strip()
       if tmp == "255":
          dtype = np.dtype('uint8')
