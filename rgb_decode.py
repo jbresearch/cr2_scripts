@@ -41,7 +41,7 @@ def main():
 
    # obtain required parameters from RAW file
    tiff = jbtiff.tiff_file(open(args.raw, 'r'))
-   width,height = tiff.get_image_size(3)
+   width,height = tiff.get_sensor_size()
    border = tiff.get_border()
    model = tiff.get_model(0)
 
