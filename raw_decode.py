@@ -98,13 +98,7 @@ def main():
       # linear display
       plt.figure()
       plt.imshow(I, cmap=plt.cm.gray)
-      plt.title('%s (linear)' % args.input)
-      # gamma-corrected
-      gamma = 2.2
-      I = np.power(I/float(I.max()), 1/gamma)
-      plt.figure()
-      plt.imshow(I, cmap=plt.cm.gray)
-      plt.title('%s (gamma %g)' % (args.input, gamma))
+      plt.title('%s' % args.input)
       # show everything
       plt.show()
    return
