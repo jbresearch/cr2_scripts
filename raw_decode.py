@@ -34,7 +34,7 @@ def main():
    parser.add_argument("-i", "--input", required=True,
                      help="input JPEG lossless raw data file to decode")
    parser.add_argument("-o", "--output", required=True,
-                     help="output decoded image file (use PNG extension)")
+                     help="output decoded image file (PGM)")
    parser.add_argument("-d", "--display", action="store_true", default=False,
                      help="display decoded image")
    args = parser.parse_args()
