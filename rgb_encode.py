@@ -35,6 +35,8 @@ def main():
                      help="input color image file to encode (PPM)")
    parser.add_argument("-o", "--output", required=True,
                      help="output sensor image file (PGM)")
+   parser.add_argument("-s", "--small", required=True,
+                     help="output small RGB image file (DAT)")
    parser.add_argument("-B", "--black", required=True, type=int,
                      help="black level (same for all channels)")
    parser.add_argument("-C", "--camera",
@@ -45,6 +47,8 @@ def main():
 
    # obtain required parameters from RAW file
    tiff = jbtiff.tiff_file(open(args.raw, 'r'))
+   swidth,sheight = tiff.get_image_size(2)
+   sdepth = tiff.get_image_depth(2)
    width,height = tiff.get_sensor_size()
    border = tiff.get_border()
    if args.camera:
@@ -69,11 +73,8 @@ def main():
    else:
       raise ValueError("Cannot handle input arrays of type %s" % I.dtype)
    I = I / float((1<<depth)-1)
-   # add border
-   I = np.pad(I, ((y1,height-y2-1),(x1,width-x2-1),(0,0)), mode='constant')
    # invert sRGB gamma correction
    I = jbtiff.tiff_file.srgb_gamma_inverse(I)
-
    # get necessary transformation data
    t_black, t_maximum, cam_rgb = jbtiff.tiff_file.color_table[model]
    # convert from linear RGB D65 space to camera color space
@@ -84,13 +85,41 @@ def main():
    print "Scaling with black level %d, saturation %d" % (args.black,t_maximum)
    I = I * (t_maximum - args.black) + args.black
 
-   # create target sensor image and copy color channels
-   a = np.zeros((height,width), dtype=np.dtype('>H'))
+   # determine subsampling rate
+   step = int(round(height / float(sheight)))
+   assert step == 2 ** int(np.log2(step))
+   # determine precision to use
+   if sdepth == 16:
+      dtype = np.dtype('<H')
+   elif sdepth == 8:
+      dtype = np.dtype('uint8')
+   else:
+      raise ValueError("Cannot handle raw images of depth %d" % sdepth)
+   # create small RGB image and copy color channels
+   a = np.zeros((iheight//step, iwidth//step, 3), dtype=dtype)
+   a[:,:,0] = I[0::step,0::step,0] # Red
+   a[:,:,1] = I[0::step,1::step,1] # Green 1
+   #a[:,:,1] = I[1::step,0::step,1] # Green 2
+   a[:,:,2] = I[1::step,1::step,2] # Blue
+   # add border
+   dy1 = (sheight - a.shape[0])//2
+   dy2 = sheight - a.shape[0] - dy1
+   dx1 = (swidth - a.shape[1])//2
+   dx2 = swidth - a.shape[1] - dx1
+   a = np.pad(a, ((dy1,dy2),(dx1,dx2),(0,0)), mode='constant', constant_values=args.black).astype(dtype)
+   assert a.shape == (sheight, swidth, 3)
+   # save result
+   a.tofile(open(args.small,'w'))
+
+   # create full sensor image and copy color channels
+   a = np.zeros((iheight,iwidth), dtype=np.dtype('>H'))
    a[0::2,0::2] = I[0::2,0::2,0] # Red
    a[0::2,1::2] = I[0::2,1::2,1] # Green 1
    a[1::2,0::2] = I[1::2,0::2,1] # Green 2
    a[1::2,1::2] = I[1::2,1::2,2] # Blue
-
+   # add border
+   a = np.pad(a, ((y1,height-y2-1),(x1,width-x2-1)), mode='constant', constant_values=args.black).astype('>H')
+   assert a.shape == (height, width)
    # save result
    jbtiff.pnm_file.write(a, open(args.output,'w'))
 
