@@ -359,6 +359,16 @@ class tiff_file():
          return model
       return None
 
+   # get image depth in bpc from given IFD, if present
+   def get_image_depth(self, ifd_index):
+      IFD = self.data[ifd_index][0]
+      if 258 in IFD:
+         d = IFD[258][2][0]
+         assert all([x==d for x in IFD[258][2]])
+         print "IFD#%d: image depth %d bpc" % (ifd_index, d)
+         return d
+      return None
+
    # get image size from given IFD, if present
    def get_image_size(self, ifd_index):
       IFD = self.data[ifd_index][0]
