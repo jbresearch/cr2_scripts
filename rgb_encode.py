@@ -111,15 +111,19 @@ def main():
    # save result
    a.tofile(open(args.small,'w'))
 
+   # add border
+   dy1 = y1
+   dy2 = height-y2-1
+   dx1 = x1
+   dx2 = width-x2-1
+   I = np.pad(I, ((dy1,dy2),(dx1,dx2),(0,0)), mode='constant', constant_values=args.black).astype('>H')
+   assert I.shape == (height, width, 3)
    # create full sensor image and copy color channels
-   a = np.zeros((iheight,iwidth), dtype=np.dtype('>H'))
+   a = np.zeros((height,width), dtype=np.dtype('>H'))
    a[0::2,0::2] = I[0::2,0::2,0] # Red
    a[0::2,1::2] = I[0::2,1::2,1] # Green 1
    a[1::2,0::2] = I[1::2,0::2,1] # Green 2
    a[1::2,1::2] = I[1::2,1::2,2] # Blue
-   # add border
-   a = np.pad(a, ((y1,height-y2-1),(x1,width-x2-1)), mode='constant', constant_values=args.black).astype('>H')
-   assert a.shape == (height, width)
    # save result
    jbtiff.pnm_file.write(a, open(args.output,'w'))
 
