@@ -19,6 +19,7 @@
 # MA 02110-1301, USA.
 
 import sys
+import os
 import argparse
 import jbtiff
 
@@ -29,32 +30,40 @@ def main():
    parser = argparse.ArgumentParser()
    parser.add_argument("-i", "--input", required=True,
                      help="input raw file to use as basis")
-   parser.add_argument("-j", "--jpeg", required=True,
-                     help="input lossles jpeg file with replacement sensor data")
+   parser.add_argument("-b", "--basename", required=True,
+                     help="base filename for replacement components (appended with -x.dat for IFD# x)")
    parser.add_argument("-o", "--output", required=True,
                      help="output CR2 file")
    args = parser.parse_args()
 
    # read input raw file
    tiff = jbtiff.tiff_file(open(args.input, 'r'))
-   # read input lossless jpeg file
-   with open(args.jpeg, 'r') as fid:
-      jpeg = fid.read()
-   # replace lossless jpeg data strip
-   assert tiff.cr2
+   # replace data strips where file exists
    for k, (IFD, ifd_offset, strips) in enumerate(tiff.data):
-      # find IFD with raw sensor data
-      if not tiff.cr2_ifd_offset == ifd_offset:
+      # construct data filename and check it exists
+      filename = '%s-%d.dat' % (args.basename, k)
+      if not os.path.isfile(filename):
          continue
-      # replace data strips with new lossless jpeg data
+      # read input data file
+      with open(filename, 'r') as fid:
+         data = fid.read()
+      print "IFD#%d: Replacing data strip with length %d" % (k, len(data))
+      # replace data strips with new data
       assert strips
-      assert 273 in IFD
-      assert 279 in IFD
-      # replace strip
       del strips[:]
-      strips.append(jpeg)
+      strips.append(data)
       # update IFD data
-      IFD[279] = (4, 1, [len(jpeg)], 0)
+      if 273 in IFD:
+         assert 279 in IFD
+         assert 513 not in IFD and 514 not in IFD
+         IFD[279] = (4, 1, [len(data)], 0)
+         continue
+      if 513 in IFD:
+         assert 514 in IFD
+         assert 273 not in IFD and 279 not in IFD
+         IFD[514] = (4, 1, [len(data)], 0)
+         continue
+      raise AssertionError("Reference to data strip not found in IFD#%d" % k)
    # save updated CR2 file
    tiff.write(open(args.output,'w'))
    return
