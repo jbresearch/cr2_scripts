@@ -25,7 +25,7 @@ import commands
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.join(os.getcwd(),'pyshared'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
 
 ## main program
