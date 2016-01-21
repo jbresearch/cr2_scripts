@@ -17,6 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with CR2_Scripts.  If not, see <http://www.gnu.org/licenses/>.
 
-cr2_extract.py -i 2908.cr2 -o Components/2908 -d > 2908.txt
-raw_decode.py -r 2908.cr2 -i Components/2908-3.dat -o Sensor/2908.pgm
-rgb_decode.py -r 2908.cr2 -i Sensor/2908.pgm -o Sensor/2908.ppm -C "Canon EOS 450D"
+../cr2_extract.py -i 2908.cr2 -o Components/2908 -d > 2908.txt
+../raw_decode.py -r 2908.cr2 -i Components/2908-3.dat -o Sensor/2908.pgm
+../rgb_decode.py -r 2908.cr2 -i Sensor/2908.pgm -o Sensor/2908.ppm -C "Canon EOS 450D"
