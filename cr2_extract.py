@@ -19,7 +19,10 @@
 # along with CR2_Scripts.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import os
 import argparse
+
+sys.path.append(os.path.join(os.getcwd(),'pyshared'))
 import jbtiff
 
 ## main program

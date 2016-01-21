@@ -18,10 +18,14 @@
 # You should have received a copy of the GNU General Public License
 # along with CR2_Scripts.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+import os
 import argparse
 import commands
 import numpy as np
 import matplotlib.pyplot as plt
+
+sys.path.append(os.path.join(os.getcwd(),'pyshared'))
 import jbtiff
 
 ## main program

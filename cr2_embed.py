@@ -21,6 +21,8 @@
 import sys
 import os
 import argparse
+
+sys.path.append(os.path.join(os.getcwd(),'pyshared'))
 import jbtiff
 
 ## main program
