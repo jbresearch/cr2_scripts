@@ -215,6 +215,9 @@ class tiff_file():
    # load tag names from text file
    dirname = os.path.dirname(os.path.abspath(__file__))
    for line in open(os.path.join(dirname,'tiff-tags.txt'),'r'):
+      # skip comments
+      if line.startswith('#'):
+         continue
       record = line.split('\t')
       parent = int(record[0])
       tag = int(record[1])
@@ -228,6 +231,9 @@ class tiff_file():
    color_table = {}
    # load color table from text file
    for line in open(os.path.join(dirname,'raw-color-coeff.txt'),'r'):
+      # skip comments
+      if line.startswith('#'):
+         continue
       record = line.split('\t')
       name = record[0]
       t_black = eval(record[1])

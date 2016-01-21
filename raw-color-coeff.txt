@@ -1,3 +1,25 @@
+# Copyright (c) 2015-2016 Johann A. Briffa
+#
+# This file is part of CR2_Scripts.
+#
+# CR2_Scripts is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# CR2_Scripts is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with CR2_Scripts.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+# The data in this file was initially obtained from dcraw.c revision 1.476;
+# the inclusion of the data in this project is consistent with the requirements
+# of the license of dcraw.c
+#
 AgfaPhoto DC-833m	0	0	11438	-3762	-1115	-2409	9914	2497	-1227	2295	5300
 Apple QuickTake	0	0	21392	-5653	-3353	2406	8010	-415	7166	1427	2078
 Canon EOS D2000	0	0	24542	-10860	-3401	-1490	11370	-297	2858	-605	3225
