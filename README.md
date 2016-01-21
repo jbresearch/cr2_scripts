@@ -24,6 +24,7 @@ To use this software you need the following installed on your system:
 - Python v2.7.6
 - Numpy v1.8.2
 - Matplotlib v1.3.1
+- PVRG JPEG v1.2.1
 
 Later versions, with the notable exception of Python v3.x, should also work.
 
