@@ -15,6 +15,18 @@ To contact us:
 - For public comments or questions, leave a comment on [Scripts for reading and writing Canon RAW files](https://jabriffa.wordpress.com/2016/01/21/scripts-for-reading-and-writing-canon-raw-files/)
 - For private communication, use the [contact form on my blog](https://jabriffa.wordpress.com/about/).
 
+# Prerequisites
+
+The scripts are written in python, as far as possible in a platform-indepedent
+way. However, they have only been tested on a 64-bit Ubuntu 14.04 LTS system.
+To use this software you need the following installed on your system:
+
+- Python v2.7.6
+- Numpy v1.8.2
+- Matplotlib v1.3.1
+
+Later versions, with the notable exception of Python v3.x, should also work.
+
 # Copyright and license
 
 Copyright (c) 2015-2016 Johann A. Briffa
