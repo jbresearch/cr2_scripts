@@ -8,10 +8,11 @@ Documentation is available as follows:
 - Brief user documentation is available for each script by passing the
    conventional '-h' or '--help' parameter.
 - An introduction to CR2_Scripts can be found in the following blog post:
-   [Scripts for reading and writing Canon RAW files]()
+   [Scripts for reading and writing Canon RAW files](https://jabriffa.wordpress.com/2016/01/21/scripts-for-reading-and-writing-canon-raw-files/)
 
 To contact us:
 - For bug reports, use the [issue tracker](https://github.com/jbresearch/cr2_scripts/issues)
+- For public comments or questions, leave a comment on [Scripts for reading and writing Canon RAW files](https://jabriffa.wordpress.com/2016/01/21/scripts-for-reading-and-writing-canon-raw-files/)
 - For private communication, use the [contact form on my blog](https://jabriffa.wordpress.com/about/).
 
 # Copyright and license
