@@ -46,7 +46,7 @@ def main():
    args = parser.parse_args()
 
    # obtain required parameters from RAW file
-   tiff = jbtiff.tiff_file(open(args.raw, 'r'))
+   tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
    width,height = tiff.get_sensor_size()
    border = tiff.get_border()
    if args.camera:
@@ -55,7 +55,7 @@ def main():
       model = tiff.get_model(0)
 
    # load sensor image
-   I = jbtiff.pnm_file.read(open(args.input,'r'))
+   I = jbtiff.pnm_file.read(open(args.input,'rb'))
    assert len(I.shape) == 2 # must be a one-channel image
    assert I.shape == (height,width) # image size must be exact
 
@@ -107,7 +107,7 @@ def main():
    I *= (1<<16)-1
 
    # save result
-   jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'w'))
+   jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
 
    # show user what we've done, as needed
    if args.display:

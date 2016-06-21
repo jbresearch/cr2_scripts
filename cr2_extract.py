@@ -39,7 +39,7 @@ def main():
    args = parser.parse_args()
 
    # read input file
-   tiff = jbtiff.tiff_file(open(args.input, 'r'))
+   tiff = jbtiff.tiff_file(open(args.input, 'rb'))
    # print data as needed
    if args.display:
       tiff.display(sys.stdout)

@@ -50,12 +50,12 @@ def main():
    # See raw_decode.py for color components & slicing example
 
    # obtain required parameters from RAW file
-   tiff = jbtiff.tiff_file(open(args.raw, 'r'))
+   tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
    width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()
 
    # load sensor image
-   I = jbtiff.pnm_file.read(open(args.input,'r'))
+   I = jbtiff.pnm_file.read(open(args.input,'rb'))
    assert len(I.shape) == 2 # must be a one-channel image
    assert I.shape == (height,width) # image size must be exact
 

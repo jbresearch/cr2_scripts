@@ -53,7 +53,7 @@ def main():
    #                      472 pixels from each of 4 colors (last one)
 
    # obtain required parameters from RAW file
-   tiff = jbtiff.tiff_file(open(args.raw, 'r'))
+   tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
    width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()
 
@@ -98,7 +98,7 @@ def main():
       I[:,col_s:col_e] = a.flat[col_s*height:col_e*height].reshape(height,sw)
 
    # save result
-   jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'w'))
+   jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
 
    # show user what we've done, as needed
    if args.display:

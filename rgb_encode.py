@@ -50,7 +50,7 @@ def main():
    args = parser.parse_args()
 
    # obtain required parameters from RAW file
-   tiff = jbtiff.tiff_file(open(args.raw, 'r'))
+   tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
    swidth,sheight = tiff.get_image_size(2)
    sdepth = tiff.get_image_depth(2)
    width,height = tiff.get_sensor_size()

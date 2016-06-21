@@ -39,7 +39,7 @@ def main():
    args = parser.parse_args()
 
    # read input raw file
-   tiff = jbtiff.tiff_file(open(args.input, 'r'))
+   tiff = jbtiff.tiff_file(open(args.input, 'rb'))
    # replace data strips where file exists
    for k, (IFD, ifd_offset, strips) in enumerate(tiff.data):
       # construct data filename and check it exists
@@ -47,7 +47,7 @@ def main():
       if not os.path.isfile(filename):
          continue
       # read input data file
-      with open(filename, 'r') as fid:
+      with open(filename, 'rb') as fid:
          data = fid.read()
       print "IFD#%d: Replacing data strip with length %d" % (k, len(data))
       # replace data strips with new data
@@ -67,7 +67,7 @@ def main():
          continue
       raise AssertionError("Reference to data strip not found in IFD#%d" % k)
    # save updated CR2 file
-   tiff.write(open(args.output,'w'))
+   tiff.write(open(args.output,'wb'))
    return
 
 # main entry point
