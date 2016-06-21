@@ -22,12 +22,15 @@ way. However, they have only been tested on a 64-bit Ubuntu 14.04 LTS system.
 To use this software you need the following installed on your system (Ubuntu
 package names given in parentheses):
 
-- Python v2.7.6 (python)
-- Numpy v1.8.2 (python-numpy)
-- Matplotlib v1.3.1  (python-matplotlib)
-- PVRG JPEG v1.2.1 (pvrg-jpeg)
+- Python v2.7.6 (`python`)
+- Numpy v1.8.2 (`python-numpy`)
+- Matplotlib v1.3.1 (`python-matplotlib`)
+- PVRG JPEG v1.2.1 (`pvrg-jpeg`)
 
 Later versions, with the notable exception of Python v3.x, should also work.
+For PVRG JPEG, note that the scripts assume the name of the executable is
+`pvrg-jpeg`; this is correct if you install the Ubuntu package.
+However, the upstream source names its executable simply as `jpeg`.
 
 # Copyright and license
 
