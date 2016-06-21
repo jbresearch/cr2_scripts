@@ -30,7 +30,8 @@ package names given in parentheses):
 Later versions, with the notable exception of Python v3.x, should also work.
 For PVRG JPEG, note that the scripts assume the name of the executable is
 `pvrg-jpeg`; this is correct if you install the Ubuntu package.
-However, the upstream source names its executable simply as `jpeg`.
+However, the [upstream source](http://www.panix.com/~eli/jpeg/) names its
+executable simply as `jpeg`.
 
 # Copyright and license
 
