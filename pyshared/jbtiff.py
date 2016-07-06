@@ -146,7 +146,7 @@ class pnm_file():
       else:
          raise ValueError("Cannot handle files with %s colors" % tmp)
       # read pixels
-      I = np.fromfile(fid, dtype=dtype)
+      I = np.fromfile(fid, count=h*w*ch, dtype=dtype)
       I = I.reshape((h,w,ch)).squeeze()
       return I
 
