@@ -43,6 +43,8 @@ def main():
                      help="output small RGB image file (DAT)")
    parser.add_argument("-B", "--black", required=True, type=int,
                      help="black level (same for all channels)")
+   parser.add_argument("-b", "--bayer", default="RGGB",
+                     help="Bayer pattern (first letter paid for odd rows, second pair for even rows)")
    parser.add_argument("-C", "--camera",
                      help="camera identifier string for color table lookup")
    parser.add_argument("-d", "--display", action="store_true", default=False,
@@ -101,10 +103,7 @@ def main():
       raise ValueError("Cannot handle raw images of depth %d" % sdepth)
    # create small RGB image and copy color channels
    a = np.zeros((iheight//step, iwidth//step, 3), dtype=dtype)
-   a[:,:,0] = I[0::step,0::step,0] # Red
-   a[:,:,1] = I[0::step,1::step,1] # Green 1
-   #a[:,:,1] = I[1::step,0::step,1] # Green 2
-   a[:,:,2] = I[1::step,1::step,2] # Blue
+   a[:] = I[0::step,0::step,:]
    # add border
    dy1 = (sheight - a.shape[0])//2
    dy2 = sheight - a.shape[0] - dy1
@@ -122,12 +121,15 @@ def main():
    dx2 = width-x2-1
    I = np.pad(I, ((dy1,dy2),(dx1,dx2),(0,0)), mode='constant', constant_values=args.black).astype('>H')
    assert I.shape == (height, width, 3)
+   # determine mapping for each colour channel
+   assert len(args.bayer) == 4
+   cmap = {v: k for k, v in enumerate("RGB")}
    # create full sensor image and copy color channels
    a = np.zeros((height,width), dtype=np.dtype('>H'))
-   a[0::2,0::2] = I[0::2,0::2,0] # Red
-   a[0::2,1::2] = I[0::2,1::2,1] # Green 1
-   a[1::2,0::2] = I[1::2,0::2,1] # Green 2
-   a[1::2,1::2] = I[1::2,1::2,2] # Blue
+   a[0::2,0::2] = I[0::2,0::2,cmap[args.bayer[0]]]
+   a[0::2,1::2] = I[0::2,1::2,cmap[args.bayer[1]]]
+   a[1::2,0::2] = I[1::2,0::2,cmap[args.bayer[2]]]
+   a[1::2,1::2] = I[1::2,1::2,cmap[args.bayer[3]]]
    # save result
    jbtiff.pnm_file.write(a, open(args.output,'w'))
 
