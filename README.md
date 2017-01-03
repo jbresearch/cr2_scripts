@@ -35,7 +35,7 @@ executable simply as `jpeg`.
 
 # Copyright and license
 
-Copyright (c) 2015-2016 Johann A. Briffa
+Copyright © 2015-2017 Johann A. Briffa
 
 This file is part of CR2_Scripts.
 

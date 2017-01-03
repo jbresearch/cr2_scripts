@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # coding=utf8
 #
-# Copyright (c) 2015-2016 Johann A. Briffa
+# Copyright © 2015-2017 Johann A. Briffa
 #
 # This file is part of CR2_Scripts.
 #
