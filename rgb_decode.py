@@ -39,6 +39,8 @@ def main():
                      help="input sensor image file to decode (PGM)")
    parser.add_argument("-o", "--output", required=True,
                      help="output color image file (PPM)")
+   parser.add_argument("-b", "--bayer", default="RGGB",
+                     help="Bayer pattern (first letter paid for odd rows, second pair for even rows)")
    parser.add_argument("-C", "--camera",
                      help="camera identifier string for color table lookup")
    parser.add_argument("-d", "--display", action="store_true", default=False,
@@ -62,32 +64,36 @@ def main():
    # get necessary transformation data
    t_black, t_maximum, cam_rgb = jbtiff.tiff_file.color_table[model]
    # extract references to color channels
-   R  = I[0::2,0::2] # Red
-   G1 = I[0::2,1::2] # Green 1
-   G2 = I[1::2,0::2] # Green 2
-   B  = I[1::2,1::2] # Blue
-   # determine black levels for each channel
-   Rb = np.median(R[:,0:4])
-   G1b = np.median(G1[:,0:4])
-   G2b = np.median(G2[:,0:4])
-   Bb = np.median(B[:,0:4])
+   # c0 c1 / c2 c3 = R G / G B on most Canon cameras
+   c = []
+   for i in [0,1]:
+      for j in [0,1]:
+         c.append(I[i::2,j::2])
+   # determine black levels for each channel from first four columns
+   bl = [np.median(c[i][:,0:4]) for i in range(4)]
    # subtract black level and scale each channel to [0.0,1.0]
-   print "Scaling with black levels (%d,%d,%d,%d), saturation %d" % (Rb,G1b,G2b,Bb,t_maximum)
-   R  = (R  - Rb)/float(t_maximum - Rb)
-   G1 = (G1 - G1b)/float(t_maximum - G1b)
-   G2 = (G2 - G2b)/float(t_maximum - G2b)
-   B  = (B  - Bb)/float(t_maximum - Bb)
+   print "Scaling with black levels (%s), saturation %d" % (','.join("%d" % x for x in bl),t_maximum)
+   for i in range(4):
+      c[i]  = (c[i]  - bl[i])/float(t_maximum - bl[i])
+   # determine nearest neighbour for each colour channel
+   assert len(args.bayer) == 4
+   nn = []
+   for ch,color in enumerate("RGB"):
+      ch_nn = np.zeros((2,2),dtype=int)
+      ch_nn[:] = -1 # initialize
+      if args.bayer.count(color) == 1: # there is only one instance
+         ch_nn[:] = args.bayer.find(color)
+      elif args.bayer.count(color) == 2: # there are two instances
+         ch_nn[0,:] = args.bayer.find(color,0,2)
+         ch_nn[1,:] = args.bayer.find(color,2,4)
+      assert(ch_nn.min() >= 0)
+      nn.append(ch_nn)
    # copy color channels and interpolate missing data (nearest neighbour)
    I = np.zeros((height, width, 3))
-   for i in [0,1]:
-      for j in [0,1]:
-         I[i::2,j::2,0] = R # Red
-   for i in [0,1]:
-      I[i::2,1::2,1] = G1 # Green 1
-      I[i::2,0::2,1] = G2 # Green 2
-   for i in [0,1]:
-      for j in [0,1]:
-         I[i::2,j::2,2] = B # Blue
+   for ch in range(3):
+      for i in [0,1]:
+         for j in [0,1]:
+            I[i::2,j::2,ch] = c[nn[ch][i,j]]
    # convert from camera color space to linear RGB D65 space
    rgb_cam = np.linalg.pinv(cam_rgb)
    I = np.dot(I, rgb_cam.transpose())
