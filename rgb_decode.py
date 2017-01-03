@@ -39,6 +39,8 @@ def main():
                      help="input sensor image file to decode (PGM)")
    parser.add_argument("-o", "--output", required=True,
                      help="output color image file (PPM)")
+   parser.add_argument("-S", "--saturation", type=int,
+                     help="saturation level (overriding camera default)")
    parser.add_argument("-b", "--bayer", default="RGGB",
                      help="Bayer pattern (first letter paid for odd rows, second pair for even rows)")
    parser.add_argument("-C", "--camera",
@@ -71,7 +73,13 @@ def main():
          c.append(I[i::2,j::2])
    # determine black levels for each channel from first four columns
    bl = [np.median(c[i][:,0:4]) for i in range(4)]
+   # determine if we need to increase the saturation level
+   t_maximum_actual = max([c[i].max() for i in range(4)])
+   if t_maximum_actual > t_maximum:
+      print "WARNING: actual levels (%d) exceed saturation (%d)" % (t_maximum_actual, t_maximum)
    # subtract black level and scale each channel to [0.0,1.0]
+   if args.saturation:
+      t_maximum = args.saturation
    print "Scaling with black levels (%s), saturation %d" % (','.join("%d" % x for x in bl),t_maximum)
    for i in range(4):
       c[i]  = (c[i]  - bl[i])/float(t_maximum - bl[i])

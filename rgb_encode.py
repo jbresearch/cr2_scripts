@@ -43,6 +43,8 @@ def main():
                      help="output small RGB image file (DAT)")
    parser.add_argument("-B", "--black", required=True, type=int,
                      help="black level (same for all channels)")
+   parser.add_argument("-S", "--saturation", type=int,
+                     help="saturation level (overriding camera default)")
    parser.add_argument("-b", "--bayer", default="RGGB",
                      help="Bayer pattern (first letter paid for odd rows, second pair for even rows)")
    parser.add_argument("-C", "--camera",
@@ -88,6 +90,8 @@ def main():
    # limit values
    np.clip(I, 0.0, 1.0, I)
    # add black level and scale each channel to saturation limit
+   if args.saturation:
+      t_maximum = args.saturation
    print "Scaling with black level %d, saturation %d" % (args.black,t_maximum)
    I = I * (t_maximum - args.black) + args.black
 
