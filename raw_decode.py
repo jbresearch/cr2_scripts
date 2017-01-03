@@ -63,7 +63,7 @@ def main():
    if st != 0:
       raise AssertionError('Error decoding JPEG file: %s' % out)
 
-   # interpret output to determine color components
+   # interpret output to determine color components and precision
    components = []
    for line in out.split('\n'):
       if line.startswith('>> '):
@@ -72,6 +72,9 @@ def main():
          w = int(record[6])
          h = int(record[8])
          components.append((f,w,h))
+      elif line.startswith('Caution: precision type:'):
+         record = line.split()
+         print "RAW data precision: %d" % int(record[3])
    # number of color components
    n = len(components)
    # first assemble color components
