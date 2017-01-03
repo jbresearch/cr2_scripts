@@ -18,7 +18,8 @@ To contact us:
 # Prerequisites
 
 The scripts are written in python, as far as possible in a platform-indepedent
-way. However, they have only been tested on a 64-bit Ubuntu 14.04 LTS system.
+way. However, they have only been tested on 64-bit Ubuntu 14.04 and 16.04 LTS
+systems.
 To use this software you need the following installed on your system (Ubuntu
 package names given in parentheses):
 
