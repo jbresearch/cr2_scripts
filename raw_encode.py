@@ -1,5 +1,5 @@
-#!/usr/bin/python
-# coding=utf8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Copyright © 2015-2017 Johann A. Briffa
 #
