@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2015-2017 Johann A. Briffa
+# Copyright © 2015-2018 Johann A. Briffa
 #
 # This file is part of CR2_Scripts.
 #
