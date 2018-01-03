@@ -46,7 +46,7 @@ def main():
    parser.add_argument("-S", "--saturation", type=int,
                      help="saturation level (overriding camera default)")
    parser.add_argument("-b", "--bayer", default="RGGB",
-                     help="Bayer pattern (first letter paid for odd rows, second pair for even rows)")
+                     help="Bayer pattern (first letter pair for odd rows, second pair for even rows)")
    parser.add_argument("-C", "--camera",
                      help="camera identifier string for color table lookup")
    parser.add_argument("-d", "--display", action="store_true", default=False,
