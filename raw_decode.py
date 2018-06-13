@@ -57,10 +57,9 @@ def main():
 
    # convert lossless JPEG encoded input file to raw data
    a, components = jbcr2.decode_lossless_jpeg(args.input)
-   height,width = a.shape
 
    # obtain required parameters from RAW file
-   assert height,width == tiff.get_sensor_size()
+   width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()
    # make a list of the width of each slice
    slice_widths = [slices[1]] * slices[0] + [slices[2]]
