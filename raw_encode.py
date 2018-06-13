@@ -59,11 +59,11 @@ def main():
    width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()
    # check input image parameters
-   assert len(I.shape) == 2 # must be a one-channel image
-   assert I.shape == (height,width) # image size must be exact
+   assert len(sensor.shape) == 2 # must be a one-channel image
+   assert sensor.shape == (height,width) # image size must be exact
 
    # slice image
-   a = jbcr2.slice_image(I, width, height, slices)
+   a = jbcr2.slice_image(sensor, width, height, slices)
    # encode to lossless JPEG output file
    parts = jbcr2.encode_lossless_jpeg(a, args.components, args.precision, args.output)
 
