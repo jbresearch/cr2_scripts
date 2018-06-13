@@ -102,11 +102,11 @@ def decode_lossless_jpeg(filename):
 
 ## unslice sensor image
 
-def unslice(a, width, height, slices):
+def unslice_image(a, width, height, slices):
    # make a list of the width of each slice
    slice_widths = [slices[1]] * slices[0] + [slices[2]]
    assert sum(slice_widths) == width
-   # next unslice image
+   # unslice image
    I = np.zeros((height, width), dtype=np.dtype('>H'))
    for i, sw in enumerate(slice_widths):
       col_s = sum(slice_widths[0:i])

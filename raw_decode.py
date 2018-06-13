@@ -52,7 +52,7 @@ def main():
    width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()
    # next unslice image
-   I = jbcr2.unslice(a, width, height, slices)
+   I = jbcr2.unslice_image(a, width, height, slices)
 
    # save result
    jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
