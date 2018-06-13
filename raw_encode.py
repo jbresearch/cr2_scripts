@@ -49,25 +49,20 @@ def main():
 
    # See raw_decode.py for color components & slicing example
 
-   # obtain required parameters from RAW file
+   # read input raw file
    tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
-   width,height = tiff.get_sensor_size()
-   slices = tiff.get_slices()
-
    # load sensor image
    I = jbtiff.pnm_file.read(open(args.input,'rb'))
+
+   # obtain required parameters from RAW file
+   width,height = tiff.get_sensor_size()
+   slices = tiff.get_slices()
+   # check input image parameters
    assert len(I.shape) == 2 # must be a one-channel image
    assert I.shape == (height,width) # image size must be exact
 
-   # make a list of the width of each slice
-   slice_widths = [slices[1]] * slices[0] + [slices[2]]
-   assert sum(slice_widths) == width
    # first slice image
-   a = np.zeros((height, width), dtype=np.dtype('>H'))
-   for i, sw in enumerate(slice_widths):
-      col_s = sum(slice_widths[0:i])
-      col_e = col_s + sw
-      a.flat[col_s*height:col_e*height] = I[:,col_s:col_e].flat
+   a = jbcr2.slice_image(I, width, height, slices)
 
    # determine color components to create
    components = []

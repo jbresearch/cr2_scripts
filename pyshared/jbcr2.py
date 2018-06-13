@@ -113,3 +113,17 @@ def unslice_image(a, width, height, slices):
       col_e = col_s + sw
       I[:,col_s:col_e] = a.flat[col_s*height:col_e*height].reshape(height,sw)
    return I
+
+## slice sensor image
+
+def slice_image(I, width, height, slices):
+   # make a list of the width of each slice
+   slice_widths = [slices[1]] * slices[0] + [slices[2]]
+   assert sum(slice_widths) == width
+   # slice image
+   a = np.zeros((height, width), dtype=np.dtype('>H'))
+   for i, sw in enumerate(slice_widths):
+      col_s = sum(slice_widths[0:i])
+      col_e = col_s + sw
+      a.flat[col_s*height:col_e*height] = I[:,col_s:col_e].flat
+   return a
