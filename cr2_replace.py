@@ -57,7 +57,7 @@ def main():
    os.remove(tmpfile)
 
    # read sensor image file
-   sensor = jbimage.imread(args.sensor).squeeze()
+   sensor = jbimage.image_file.read(args.sensor).squeeze()
 
    # obtain required parameters from RAW file
    width,height = tiff.get_sensor_size()

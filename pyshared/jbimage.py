@@ -21,23 +21,27 @@
 import numpy as np
 from PIL import Image
 
-## read and write image files
+## class to read and write general image files (using PIL)
 
-def imwrite(I,outfile):
-   # Works with PIL 1.1.6 upwards
-   assert list(map(int, Image.VERSION.split('.'))) >= [1,1,6]
-   # convert to image of the correct type based on shape and dtype
-   im = Image.fromarray(I.squeeze())
-   # save to file
-   im.save(outfile, optimize=True)
-   return
+class image_file():
 
-def imread(infile):
-   im = Image.open(infile)
-   ch = len(im.mode)
-   (x,y) = im.size
-   # Works with PIL 1.1.6 upwards
-   # return array is read-only!
-   assert list(map(int, Image.VERSION.split('.'))) >= [1,1,6]
-   I = np.asarray(im).reshape(y,x,ch)
-   return I
+   @staticmethod
+   def read(infile):
+      im = Image.open(infile)
+      ch = len(im.mode)
+      (x,y) = im.size
+      # Works with PIL 1.1.6 upwards
+      # return array is read-only!
+      assert list(map(int, Image.VERSION.split('.'))) >= [1,1,6]
+      I = np.asarray(im).reshape(y,x,ch)
+      return I
+
+   @staticmethod
+   def write(I,outfile):
+      # Works with PIL 1.1.6 upwards
+      assert list(map(int, Image.VERSION.split('.'))) >= [1,1,6]
+      # convert to image of the correct type based on shape and dtype
+      im = Image.fromarray(I.squeeze())
+      # save to file
+      im.save(outfile, optimize=True)
+      return

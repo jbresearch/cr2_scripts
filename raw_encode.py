@@ -27,8 +27,8 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
-import jbcr2
 import jbimage
+import jbcr2
 
 ## main program
 
@@ -54,7 +54,7 @@ def main():
    # read input raw file
    tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
    # load sensor image
-   sensor = jbimage.imread(args.input).squeeze()
+   sensor = jbimage.image_file.read(args.input).squeeze()
 
    # obtain required parameters from RAW file
    width,height = tiff.get_sensor_size()
