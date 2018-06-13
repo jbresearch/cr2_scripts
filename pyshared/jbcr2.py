@@ -100,6 +100,48 @@ def decode_lossless_jpeg(filename):
 
    return a, len(component_list)
 
+## encode raw image to lossless JPEG output file
+
+def encode_lossless_jpeg(a, components, precision, filename):
+   # create folder for temporary files
+   tmpfolder = tempfile.mkdtemp()
+
+   # determine image size
+   height, width = a.shape
+   # determine color components to create
+   component_list = []
+   for i in range(components):
+      f = os.path.join(tmpfolder, 'parts.%d' % (i+1))
+      component_list.append(f)
+   # next split color components
+   parts = []
+   for i, f in enumerate(component_list):
+      # space for raw data for this color component
+      b = np.zeros((height, width / components), dtype=np.dtype('>H'))
+      # extract data from sliced color image
+      b = a[:,i::components]
+      # save to file
+      b.tofile(f)
+      # keep a copy to return to caller
+      parts.append(b)
+
+   # convert raw data color components to lossless JPEG encoded file
+   cmd = 'pvrg-jpeg -ih %d -iw %d -k 1 -p %d -s "%s"' % \
+      (height, width / components, precision, filename)
+   for i, f in enumerate(component_list):
+      cmd += ' -ci %d %s' % (i+1, f)
+   st, out = commands.getstatusoutput(cmd)
+   if st != 0:
+      raise AssertionError('Error encoding JPEG file: %s' % out)
+
+   # remove temporary files
+   for i, f in enumerate(component_list):
+      os.remove(f)
+
+   # remove (empty) temporary folder
+   os.rmdir(tmpfolder)
+   return parts
+
 ## unslice sensor image
 
 def unslice_image(a, width, height, slices):

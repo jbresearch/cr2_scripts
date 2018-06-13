@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
+import jbcr2
 
 ## main program
 
@@ -61,43 +62,17 @@ def main():
    assert len(I.shape) == 2 # must be a one-channel image
    assert I.shape == (height,width) # image size must be exact
 
-   # first slice image
+   # slice image
    a = jbcr2.slice_image(I, width, height, slices)
-
-   # determine color components to create
-   components = []
-   for i in range(args.components):
-      f = 'parts.%d' % (i+1)
-      components.append(f)
-   # next split color components
-   for i, f in enumerate(components):
-      # space for raw data for this color component
-      b = np.zeros((height, width / args.components), dtype=np.dtype('>H'))
-      # extract data from sliced color image
-      b = a[:,i::args.components]
-      # save to file
-      b.tofile(f)
-      # show user what we've done, as needed
-      if args.display:
-         plt.figure()
-         plt.imshow(b, cmap=plt.cm.gray)
-         plt.title('%s' % f)
-
-   # convert raw data color components to lossless JPEG encoded file
-   cmd = 'pvrg-jpeg -ih %d -iw %d -k 1 -p %d -s "%s"' % \
-      (height, width / args.components, args.precision, args.output)
-   for i, f in enumerate(components):
-      cmd += ' -ci %d %s' % (i+1, f)
-   st, out = commands.getstatusoutput(cmd)
-   if st != 0:
-      raise AssertionError('Error encoding JPEG file: %s' % out)
-
-   # remove temporary files
-   for i, f in enumerate(components):
-      os.remove(f)
+   # encode to lossless JPEG output file
+   parts = jbcr2.encode_lossless_jpeg(a, args.components, args.precision, args.output)
 
    # show user what we've done, as needed
    if args.display:
+      for i, b in enumerate(parts):
+         plt.figure()
+         plt.imshow(b, cmap=plt.cm.gray)
+         plt.title('Part %d' % i)
       plt.show()
    return
 
