@@ -24,6 +24,7 @@ import argparse
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
+import jbcr2
 
 ## main program
 
@@ -41,7 +42,7 @@ def main():
    # read input raw file
    tiff = jbtiff.tiff_file(open(args.input, 'rb'))
    # replace data strips where file exists
-   for k, (IFD, ifd_offset, strips) in enumerate(tiff.data):
+   for k in range(len(tiff.data)):
       # construct data filename and check it exists
       filename = '%s-%d.dat' % (args.basename, k)
       if not os.path.isfile(filename):
@@ -49,23 +50,8 @@ def main():
       # read input data file
       with open(filename, 'rb') as fid:
          data = fid.read()
-      print "IFD#%d: Replacing data strip with length %d" % (k, len(data))
       # replace data strips with new data
-      assert strips
-      del strips[:]
-      strips.append(data)
-      # update IFD data
-      if 273 in IFD:
-         assert 279 in IFD
-         assert 513 not in IFD and 514 not in IFD
-         IFD[279] = (4, 1, [len(data)], 0)
-         continue
-      if 513 in IFD:
-         assert 514 in IFD
-         assert 273 not in IFD and 279 not in IFD
-         IFD[514] = (4, 1, [len(data)], 0)
-         continue
-      raise AssertionError("Reference to data strip not found in IFD#%d" % k)
+      jbcr2.replace_ifd(tiff, k, data)
    # save updated CR2 file
    tiff.write(open(args.output,'wb'))
    return

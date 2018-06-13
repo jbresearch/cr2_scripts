@@ -24,29 +24,7 @@ import argparse
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
-
-## component functions
-
-def replace_ifd(tiff, k, data):
-   print "IFD#%d: Replacing data strip with length %d" % (k, len(data))
-   # get references to required IFD
-   IFD, ifd_offset, strips = tiff.data[k]
-   # replace data strips with new data
-   assert strips
-   del strips[:]
-   strips.append(data)
-   # update IFD data
-   if 273 in IFD:
-      assert 279 in IFD
-      assert 513 not in IFD and 514 not in IFD
-      IFD[279] = (4, 1, [len(data)], 0)
-   elif 513 in IFD:
-      assert 514 in IFD
-      assert 273 not in IFD and 279 not in IFD
-      IFD[514] = (4, 1, [len(data)], 0)
-   else:
-      raise AssertionError("Reference to data strip not found in IFD#%d" % k)
-   return
+import jbcr2
 
 ## main program
 
@@ -68,7 +46,7 @@ def main():
       data = fid.read()
 
    # replace data strips for main sensor image (IFD#3)
-   replace_ifd(tiff, 3, data)
+   jbcr2.replace_ifd(tiff, 3, data)
 
    # save updated CR2 file
    tiff.write(open(args.output,'wb'))
