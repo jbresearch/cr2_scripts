@@ -47,7 +47,7 @@ def main():
    tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
 
    # convert lossless JPEG encoded input file to raw data
-   a, components = jbcr2.decode_lossless_jpeg(args.input)
+   a, components, precision = jbcr2.decode_lossless_jpeg(args.input)
    # obtain required parameters from RAW file
    width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()

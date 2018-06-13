@@ -69,6 +69,7 @@ def decode_lossless_jpeg(filename):
 
    # interpret output to determine the number of color components and precision
    component_list = []
+   precision = None
    for line in out.split('\n'):
       if line.startswith('>> '):
          record = line.split()
@@ -78,7 +79,8 @@ def decode_lossless_jpeg(filename):
          component_list.append((f,w,h))
       elif line.startswith('Caution: precision type:'):
          record = line.split()
-         print "RAW data precision: %d" % int(record[3])
+         precision = int(record[3])
+         print "RAW data precision: %d" % precision
    # number of color components
    n = len(component_list)
    # first assemble color components
@@ -98,7 +100,7 @@ def decode_lossless_jpeg(filename):
    # remove (empty) temporary folder
    os.rmdir(tmpfolder)
 
-   return a, len(component_list)
+   return a, len(component_list), precision
 
 ## encode raw image to lossless JPEG output file
 
