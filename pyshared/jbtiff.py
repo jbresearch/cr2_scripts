@@ -116,67 +116,6 @@ class value_range():
    def display(self):
       return ', '.join(['%d-%d' % (a,b) if b>a else '%d' % a for a,b in self.data])
 
-class pnm_file():
-
-   @staticmethod
-   def read(fid):
-      # read header (assume separate lines for id, size, and depth)
-      tmp = fid.readline().strip()
-      if tmp == "P5":
-         ch = 1
-      elif tmp == "P6":
-         ch = 3
-      else:
-         raise ValueError("Cannot handle files of type %s" % tmp)
-      tmp = fid.readline().strip().split()
-      if len(tmp) == 2: # width,height in same line
-         w = int(tmp[0])
-         h = int(tmp[1])
-      else: # width, height in separate lines
-         assert len(tmp) == 1
-         w = int(tmp[0])
-         tmp = fid.readline().strip().split()
-         assert len(tmp) == 1
-         h = int(tmp[0])
-      tmp = fid.readline().strip()
-      if tmp == "255":
-         dtype = np.dtype('uint8')
-      elif tmp == "65535":
-         dtype = np.dtype('>H')
-      else:
-         raise ValueError("Cannot handle files with %s colors" % tmp)
-      # read pixels
-      I = np.fromfile(fid, count=h*w*ch, dtype=dtype)
-      I = I.reshape((h,w,ch)).squeeze()
-      return I
-
-   @staticmethod
-   def write(image, fid):
-      # determine dimensions, channels, and bit depth
-      if len(image.shape) == 2:
-         h,w = image.shape
-         ch = 1
-      elif len(image.shape) == 3:
-         h,w,ch = image.shape
-      else:
-         raise ValueError("Cannot handle input arrays of size %s" % image.shape)
-      if image.dtype == np.dtype('uint8'):
-         depth = 8
-      elif image.dtype == np.dtype('>H'):
-         depth = 16
-      else:
-         raise ValueError("Cannot handle input arrays of type %s" % image.dtype)
-      # write header
-      if ch == 1:
-         print >> fid, "P5"
-      else:
-         print >> fid, "P6"
-      print >> fid, w, h
-      print >> fid, (1<<depth)-1
-      # write pixels
-      image.tofile(fid)
-      return
-
 class tiff_file():
 
    ## constants

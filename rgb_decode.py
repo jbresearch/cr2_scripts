@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
+import jbimage
 
 ## main program
 
@@ -59,7 +60,7 @@ def main():
       model = tiff.get_model(0)
 
    # load sensor image
-   I = jbtiff.pnm_file.read(open(args.input,'rb'))
+   I = jbimage.pnm_file.read(open(args.input,'rb'))
    assert len(I.shape) == 2 # must be a one-channel image
    assert I.shape == (height,width) # image size must be exact
 
@@ -121,7 +122,7 @@ def main():
    I *= (1<<16)-1
 
    # save result
-   jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
+   jbimage.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
 
    # show user what we've done, as needed
    if args.display:

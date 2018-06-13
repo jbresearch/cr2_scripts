@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
+import jbimage
 
 ## main program
 
@@ -69,7 +70,7 @@ def main():
    iheight = y2-y1+1
 
    # load colour image
-   I = jbtiff.pnm_file.read(open(args.input,'r'))
+   I = jbimage.pnm_file.read(open(args.input,'r'))
    assert len(I.shape) == 3 and I.shape[2] == 3 # must be a three-channel image
    assert I.shape == (iheight,iwidth,3) # image size must be exact
 
@@ -135,7 +136,7 @@ def main():
    a[1::2,0::2] = I[1::2,0::2,cmap[args.bayer[2]]]
    a[1::2,1::2] = I[1::2,1::2,cmap[args.bayer[3]]]
    # save result
-   jbtiff.pnm_file.write(a, open(args.output,'w'))
+   jbimage.pnm_file.write(a, open(args.output,'w'))
 
    # show user what we've done, as needed
    if args.display:

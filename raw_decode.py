@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
+import jbimage
 import jbcr2
 
 ## main program
@@ -55,7 +56,7 @@ def main():
    I = jbcr2.unslice_image(a, width, height, slices)
 
    # save result
-   jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
+   jbimage.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
 
    # show user what we've done, as needed
    if args.display:
