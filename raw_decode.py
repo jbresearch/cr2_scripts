@@ -21,12 +21,12 @@
 import sys
 import os
 import argparse
-import commands
 import numpy as np
 import matplotlib.pyplot as plt
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
+import jbcr2
 
 ## main program
 
@@ -52,44 +52,16 @@ def main():
    #    each slice takes: 432 pixels from each of 4 colors (first two)
    #                      472 pixels from each of 4 colors (last one)
 
-   # obtain required parameters from RAW file
+   # read input raw file
    tiff = jbtiff.tiff_file(open(args.raw, 'rb'))
-   width,height = tiff.get_sensor_size()
-   slices = tiff.get_slices()
 
    # convert lossless JPEG encoded input file to raw data
-   cmd = 'pvrg-jpeg -d -s "%s" -o parts' % args.input
-   st, out = commands.getstatusoutput(cmd)
-   if st != 0:
-      raise AssertionError('Error decoding JPEG file: %s' % out)
+   a, components = jbcr2.decode_lossless_jpeg(args.input)
+   height,width = a.shape
 
-   # interpret output to determine color components and precision
-   components = []
-   for line in out.split('\n'):
-      if line.startswith('>> '):
-         record = line.split()
-         f = record[4]
-         w = int(record[6])
-         h = int(record[8])
-         components.append((f,w,h))
-      elif line.startswith('Caution: precision type:'):
-         record = line.split()
-         print "RAW data precision: %d" % int(record[3])
-   # number of color components
-   n = len(components)
-   # first assemble color components
-   assert all([h == height for f,w,h in components])
-   assert sum([w for f,w,h in components]) == width
-   a = np.zeros((height, width), dtype=np.dtype('>H'))
-   for i, (f,w,h) in enumerate(components):
-      # read raw data for this color component
-      b = np.fromfile(f, dtype=np.dtype('>H'))
-      b.shape = (h,w)
-      # insert into assembled color image
-      a[:,i::n] = b
-      # remove temporary file
-      os.remove(f)
-
+   # obtain required parameters from RAW file
+   assert height,width == tiff.get_sensor_size()
+   slices = tiff.get_slices()
    # make a list of the width of each slice
    slice_widths = [slices[1]] * slices[0] + [slices[2]]
    assert sum(slice_widths) == width

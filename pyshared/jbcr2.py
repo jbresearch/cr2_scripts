@@ -18,6 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with CR2_Scripts.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import tempfile
+import commands
+import numpy as np
 
 ## replace data strips for specified IFD
 
@@ -41,3 +45,48 @@ def replace_ifd(tiff, k, data):
    else:
       raise AssertionError("Reference to data strip not found in IFD#%d" % k)
    return
+
+## convert lossless JPEG encoded input file to raw data
+
+def decode_lossless_jpeg(filename):
+   # create folder for temporary files
+   tmpfolder = tempfile.mkdtemp()
+
+   # decode input file with Stanford PVRG software
+   cmd = 'pvrg-jpeg -d -s "%s" -o "%s"' % (filename, os.path.join(tmpfolder, "parts"))
+   st, out = commands.getstatusoutput(cmd)
+   if st != 0:
+      raise AssertionError('Error decoding JPEG file: %s' % out)
+
+   # interpret output to determine the number of color components and precision
+   components = []
+   for line in out.split('\n'):
+      if line.startswith('>> '):
+         record = line.split()
+         f = record[4]
+         w = int(record[6])
+         h = int(record[8])
+         components.append((f,w,h))
+      elif line.startswith('Caution: precision type:'):
+         record = line.split()
+         print "RAW data precision: %d" % int(record[3])
+   # number of color components
+   n = len(components)
+   # first assemble color components
+   width = sum([w for f,w,h in components])
+   height = components[0][2]
+   assert all([h == height for f,w,h in components])
+   a = np.zeros((height, width), dtype=np.dtype('>H'))
+   for i, (f,w,h) in enumerate(components):
+      # read raw data for this component
+      b = np.fromfile(f, dtype=np.dtype('>H'))
+      b.shape = (h,w)
+      # insert into assembled color image
+      a[:,i::n] = b
+      # remove temporary file
+      os.remove(f)
+
+   # remove (empty) temporary folder
+   os.rmdir(tmpfolder)
+
+   return a, len(components)
