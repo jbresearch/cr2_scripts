@@ -20,11 +20,13 @@
 
 import sys
 import os
+import tempfile
 import argparse
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
 import jbcr2
+import jbimage
 
 ## main program
 
@@ -41,9 +43,38 @@ def main():
 
    # read input raw file
    tiff = jbtiff.tiff_file(open(args.input, 'rb'))
-   # read input data file
-   with open(args.sensor, 'rb') as fid:
+
+   # extract existing sensor image
+   IFD, ifd_offset, strips = tiff.data[3]
+   # save into a temporary file
+   fid, tmpfile = tempfile.mkstemp()
+   for strip in strips:
+      os.write(fid, strip)
+   os.close(fid)
+   # decode lossless JPEG encoded file to determine parameters
+   a, components, precision = jbcr2.decode_lossless_jpeg(tmpfile)
+   # delete temporary file
+   os.remove(tmpfile)
+
+   # read sensor image file
+   sensor = jbimage.imread(args.sensor).squeeze()
+
+   # obtain required parameters from RAW file
+   width,height = tiff.get_sensor_size()
+   slices = tiff.get_slices()
+   # check input image parameters
+   assert len(sensor.shape) == 2 # must be a one-channel image
+   assert sensor.shape == (height,width) # image size must be exact
+   # slice image
+   a = jbcr2.slice_image(sensor, width, height, slices)
+   # encode to a temporary lossless JPEG output file
+   fid, tmpfile = tempfile.mkstemp()
+   os.close(fid)
+   parts = jbcr2.encode_lossless_jpeg(a, components, precision, tmpfile)
+   # read and delete temporary file
+   with open(tmpfile, 'rb') as fid:
       data = fid.read()
+   os.remove(tmpfile)
 
    # replace data strips for main sensor image (IFD#3)
    jbcr2.replace_ifd(tiff, 3, data)
