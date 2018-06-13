@@ -57,19 +57,11 @@ def main():
 
    # convert lossless JPEG encoded input file to raw data
    a, components = jbcr2.decode_lossless_jpeg(args.input)
-
    # obtain required parameters from RAW file
    width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()
-   # make a list of the width of each slice
-   slice_widths = [slices[1]] * slices[0] + [slices[2]]
-   assert sum(slice_widths) == width
    # next unslice image
-   I = np.zeros((height, width), dtype=np.dtype('>H'))
-   for i, sw in enumerate(slice_widths):
-      col_s = sum(slice_widths[0:i])
-      col_e = col_s + sw
-      I[:,col_s:col_e] = a.flat[col_s*height:col_e*height].reshape(height,sw)
+   I = jbcr2.unslice(a, width, height, slices)
 
    # save result
    jbtiff.pnm_file.write(I.astype('>H'), open(args.output,'wb'))
