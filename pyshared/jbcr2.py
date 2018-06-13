@@ -68,25 +68,25 @@ def decode_lossless_jpeg(filename):
    #                      472 pixels from each of 4 colors (last one)
 
    # interpret output to determine the number of color components and precision
-   components = []
+   component_list = []
    for line in out.split('\n'):
       if line.startswith('>> '):
          record = line.split()
          f = record[4]
          w = int(record[6])
          h = int(record[8])
-         components.append((f,w,h))
+         component_list.append((f,w,h))
       elif line.startswith('Caution: precision type:'):
          record = line.split()
          print "RAW data precision: %d" % int(record[3])
    # number of color components
-   n = len(components)
+   n = len(component_list)
    # first assemble color components
-   width = sum([w for f,w,h in components])
-   height = components[0][2]
-   assert all([h == height for f,w,h in components])
+   width = sum([w for f,w,h in component_list])
+   height = component_list[0][2]
+   assert all([h == height for f,w,h in component_list])
    a = np.zeros((height, width), dtype=np.dtype('>H'))
-   for i, (f,w,h) in enumerate(components):
+   for i, (f,w,h) in enumerate(component_list):
       # read raw data for this component
       b = np.fromfile(f, dtype=np.dtype('>H'))
       b.shape = (h,w)
@@ -98,7 +98,7 @@ def decode_lossless_jpeg(filename):
    # remove (empty) temporary folder
    os.rmdir(tmpfolder)
 
-   return a, len(components)
+   return a, len(component_list)
 
 ## unslice sensor image
 
