@@ -58,6 +58,15 @@ def decode_lossless_jpeg(filename):
    if st != 0:
       raise AssertionError('Error decoding JPEG file: %s' % out)
 
+   # Laurent Clévy's example:
+   # Image (w x h): 5184 x 3456
+   # 4 color components (w x h): 0x538 x 0xdbc = 1336 x 3516 each
+   #    interleaved components: 5344 x 3516
+   #    border: 160 x 60 on declared image size
+   # 3 slices (w): 2x 0x6c0 + 0x760 = 2x 1728 + 1888 = 5344
+   #    each slice takes: 432 pixels from each of 4 colors (first two)
+   #                      472 pixels from each of 4 colors (last one)
+
    # interpret output to determine the number of color components and precision
    components = []
    for line in out.split('\n'):
