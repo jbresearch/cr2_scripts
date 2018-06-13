@@ -25,29 +25,12 @@ import argparse
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'pyshared'))
 import jbtiff
 
-## main program
+## component functions
 
-def main():
-   # interpret user options
-   parser = argparse.ArgumentParser()
-   parser.add_argument("-i", "--input", required=True,
-                     help="input raw file to use as basis")
-   parser.add_argument("-s", "--sensor", required=True,
-                     help="sensor image file to replace input")
-   parser.add_argument("-o", "--output", required=True,
-                     help="output CR2 file")
-   args = parser.parse_args()
-
-   # read input raw file
-   tiff = jbtiff.tiff_file(open(args.input, 'rb'))
-   # replace data strips for main sensor image (IFD#3)
-   k = 3
-   IFD, ifd_offset, strips = tiff.data[k]
-
-   # read input data file
-   with open(args.sensor, 'rb') as fid:
-      data = fid.read()
+def replace_ifd(tiff, k, data):
    print "IFD#%d: Replacing data strip with length %d" % (k, len(data))
+   # get references to required IFD
+   IFD, ifd_offset, strips = tiff.data[k]
    # replace data strips with new data
    assert strips
    del strips[:]
@@ -63,6 +46,29 @@ def main():
       IFD[514] = (4, 1, [len(data)], 0)
    else:
       raise AssertionError("Reference to data strip not found in IFD#%d" % k)
+   return
+
+## main program
+
+def main():
+   # interpret user options
+   parser = argparse.ArgumentParser()
+   parser.add_argument("-i", "--input", required=True,
+                     help="input raw file to use as basis")
+   parser.add_argument("-s", "--sensor", required=True,
+                     help="sensor image file to replace input")
+   parser.add_argument("-o", "--output", required=True,
+                     help="output CR2 file")
+   args = parser.parse_args()
+
+   # read input raw file
+   tiff = jbtiff.tiff_file(open(args.input, 'rb'))
+   # read input data file
+   with open(args.sensor, 'rb') as fid:
+      data = fid.read()
+
+   # replace data strips for main sensor image (IFD#3)
+   replace_ifd(tiff, 3, data)
 
    # save updated CR2 file
    tiff.write(open(args.output,'wb'))
