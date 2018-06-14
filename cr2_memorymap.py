@@ -39,8 +39,12 @@ def main():
    # display memory map
    mmap = tiff.get_memorymap()
    print "*** Memory Map ***"
+   next_offset = 0
    for offset, length, description in sorted(mmap):
-      print "%8d - %8d\t%8d\t%s" % (offset, offset+length-1, length, description)
+      if offset > next_offset:
+         print "*%8d - %8d\t%8d" % (next_offset, offset-1, offset-next_offset)
+      print " %8d - %8d\t%8d\t%s" % (offset, offset+length-1, length, description)
+      next_offset = offset + length
    print "*** END ***"
 
    return
