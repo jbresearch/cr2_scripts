@@ -36,7 +36,7 @@ def main():
    parser.add_argument("-i", "--input", required=True,
                      help="input raw file to use as basis")
    parser.add_argument("-d", "--decode",
-                     help="decode and keep previous sensor image file")
+                     help="decode and keep previous sensor image file (as PNM)")
    parser.add_argument("-s", "--sensor", required=True,
                      help="sensor image file to replace input")
    parser.add_argument("-o", "--output", required=True,
