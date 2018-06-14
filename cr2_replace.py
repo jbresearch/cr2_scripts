@@ -35,6 +35,8 @@ def main():
    parser = argparse.ArgumentParser()
    parser.add_argument("-i", "--input", required=True,
                      help="input raw file to use as basis")
+   parser.add_argument("-d", "--decode",
+                     help="decode and keep previous sensor image file")
    parser.add_argument("-s", "--sensor", required=True,
                      help="sensor image file to replace input")
    parser.add_argument("-o", "--output", required=True,
@@ -43,6 +45,9 @@ def main():
 
    # read input raw file
    tiff = jbtiff.tiff_file(open(args.input, 'rb'))
+   # obtain required parameters from RAW file
+   width,height = tiff.get_sensor_size()
+   slices = tiff.get_slices()
 
    # extract existing sensor image
    IFD, ifd_offset, strips = tiff.data[3]
@@ -55,13 +60,16 @@ def main():
    a, components, precision = jbcr2.decode_lossless_jpeg(tmpfile)
    # delete temporary file
    os.remove(tmpfile)
+   # store decoded sensor image file as needed
+   if args.decode:
+      # unslice image
+      I = jbcr2.unslice_image(a, width, height, slices)
+      # save result
+      jbimage.pnm_file.write(I.astype('>H'), open(args.decode,'wb'))
 
    # read sensor image file
    sensor = jbimage.image_file.read(args.sensor).squeeze()
 
-   # obtain required parameters from RAW file
-   width,height = tiff.get_sensor_size()
-   slices = tiff.get_slices()
    # check input image parameters
    assert len(sensor.shape) == 2 # must be a one-channel image
    assert sensor.shape == (height,width) # image size must be exact
