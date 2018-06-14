@@ -293,6 +293,24 @@ class tiff_file():
       fid.write(buf)
       return
 
+   # get tags with strip offset and length from IFD
+   @staticmethod
+   def get_strip_parameters(IFD):
+      tag_offset = None
+      tag_length = None
+      if 273 in IFD:
+         assert 279 in IFD
+         assert 513 not in IFD and 514 not in IFD
+         tag_offset = 273
+         tag_length = 279
+      if 513 in IFD:
+         assert 514 in IFD
+         assert 273 not in IFD and 279 not in IFD
+         tag_offset = 513
+         tag_length = 514
+      assert tag_offset and tag_length
+      return tag_offset, tag_length
+
    ## class methods
 
    # get camera model from given IFD, if present
@@ -466,23 +484,6 @@ class tiff_file():
             IFD[tag] = (field_type, value_count, values, value_offset)
       # return directory
       return IFD
-
-   @staticmethod
-   def get_strip_parameters(IFD):
-      tag_offset = None
-      tag_length = None
-      if 273 in IFD:
-         assert 279 in IFD
-         assert 513 not in IFD and 514 not in IFD
-         tag_offset = 273
-         tag_length = 279
-      if 513 in IFD:
-         assert 514 in IFD
-         assert 273 not in IFD and 279 not in IFD
-         tag_offset = 513
-         tag_length = 514
-      assert tag_offset and tag_length
-      return tag_offset, tag_length
 
    # initialize class from stream
    def __init__(self, fid):
