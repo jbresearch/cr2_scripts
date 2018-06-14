@@ -52,7 +52,7 @@ def main():
    # obtain required parameters from RAW file
    width,height = tiff.get_sensor_size()
    slices = tiff.get_slices()
-   # next unslice image
+   # unslice image
    I = jbcr2.unslice_image(a, width, height, slices)
 
    # save result
