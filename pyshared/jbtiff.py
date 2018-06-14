@@ -795,7 +795,7 @@ class tiff_file():
          # if this was a subdirectory, recurse
          if isinstance(values, dict):
             # add directory to memory map
-            length = 2+len(values)*12
+            length = 2+len(values)*12 # must be a leaf
             mmap += tiff_file.get_memorymap_directory(values, this_item, tag)
          else:
             # data segment length
@@ -811,8 +811,8 @@ class tiff_file():
       # work through all IFDs
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          this_ifd = "IFD#%d" % k
-         # add entry for the directory itself
-         mmap.append((ifd_offset, 2+len(IFD)*12, this_ifd))
+         # add entry for the directory itself (not a leaf)
+         mmap.append((ifd_offset, 2+len(IFD)*12+4, this_ifd))
          # add content of IFD
          mmap += tiff_file.get_memorymap_directory(IFD, this_ifd)
          # add data strips if present
