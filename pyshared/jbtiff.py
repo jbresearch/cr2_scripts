@@ -467,6 +467,23 @@ class tiff_file():
       # return directory
       return IFD
 
+   @staticmethod
+   def get_strip_parameters(IFD):
+      tag_offset = None
+      tag_length = None
+      if 273 in IFD:
+         assert 279 in IFD
+         assert 513 not in IFD and 514 not in IFD
+         tag_offset = 273
+         tag_length = 279
+      if 513 in IFD:
+         assert 514 in IFD
+         assert 273 not in IFD and 279 not in IFD
+         tag_offset = 513
+         tag_length = 514
+      assert tag_offset and tag_length
+      return tag_offset, tag_length
+
    # initialize class from stream
    def __init__(self, fid):
       # keep track of range of bytes read
@@ -493,18 +510,9 @@ class tiff_file():
          offset_ptr = ifd_offset + 2 + len(IFD)*12
          # read data strips or embedded JPEG if present
          strips = []
-         strip_offsets = []
-         strip_lengths = []
-         if 273 in IFD:
-            assert 279 in IFD
-            assert 513 not in IFD and 514 not in IFD
-            strip_offsets = IFD[273][2]
-            strip_lengths = IFD[279][2]
-         if 513 in IFD:
-            assert 514 in IFD
-            assert 273 not in IFD and 279 not in IFD
-            strip_offsets = IFD[513][2]
-            strip_lengths = IFD[514][2]
+         tag_offset, tag_length = tiff_file.get_strip_parameters(IFD)
+         strip_offsets = IFD[tag_offset][2]
+         strip_lengths = IFD[tag_length][2]
          assert len(strip_offsets) == len(strip_lengths)
          for strip_offset, strip_length in zip(strip_offsets, strip_lengths):
             fid.seek(strip_offset)
@@ -694,19 +702,7 @@ class tiff_file():
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          # write data strips if present
          if strips:
-            tag_offset = None
-            tag_length = None
-            if 273 in IFD:
-               assert 279 in IFD
-               assert 513 not in IFD and 514 not in IFD
-               tag_offset = 273
-               tag_length = 279
-            if 513 in IFD:
-               assert 514 in IFD
-               assert 273 not in IFD and 279 not in IFD
-               tag_offset = 513
-               tag_length = 514
-            assert tag_offset and tag_length
+            tag_offset, tag_length = tiff_file.get_strip_parameters(IFD)
             assert len(IFD[tag_offset][2]) == len(strips)
             assert len(IFD[tag_length][2]) == len(strips)
             for i, strip in enumerate(strips):
