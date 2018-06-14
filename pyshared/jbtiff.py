@@ -780,6 +780,53 @@ class tiff_file():
          tiff_file.display_directory(fid, IFD)
       return
 
+   # return memory map of objects in directory
+   @staticmethod
+   def get_memorymap_directory(IFD, prefix, parent=0):
+      mmap = []
+      for tag, (field_type, value_count, values, value_offset) in IFD.iteritems():
+         # we only need to add cases with external data
+         if not value_offset:
+            continue
+         # IFD entry tag
+         this_item = prefix + " Tag %d" % tag
+         if (parent,tag) in tiff_file.tag_name:
+            this_item += " [%s]" % tiff_file.tag_name[(parent,tag)]
+         # if this was a subdirectory, recurse
+         if isinstance(values, dict):
+            # add directory to memory map
+            length = 2+len(values)*12
+            mmap += tiff_file.get_memorymap_directory(values, this_item, tag)
+         else:
+            # data segment length
+            length = tiff_file.field_size[field_type] * value_count
+         # add to memory map
+         mmap.append((value_offset, length, this_item))
+      return mmap
+
+   # return memory map of all objects
+   def get_memorymap(self):
+      # start with an empty memory map
+      mmap = []
+      # work through all IFDs
+      for k, (IFD, ifd_offset, strips) in enumerate(self.data):
+         this_ifd = "IFD#%d" % k
+         # add entry for the directory itself
+         mmap.append((ifd_offset, 2+len(IFD)*12, this_ifd))
+         # add content of IFD
+         mmap += tiff_file.get_memorymap_directory(IFD, this_ifd)
+         # add data strips if present
+         if strips:
+            tag_offset, tag_length = tiff_file.get_strip_parameters(IFD)
+            assert len(IFD[tag_offset][2]) == len(strips)
+            assert len(IFD[tag_length][2]) == len(strips)
+            for i, strip in enumerate(strips):
+               # check IFD data
+               assert IFD[tag_length][2][i] == len(strip)
+               # add to memory map
+               mmap.append((IFD[tag_offset][2][i], IFD[tag_length][2][i], this_ifd + " strip %d" % i))
+      return mmap
+
    # print formatted data to stream
    def save_data(self, basename):
       # go through all IFDs in file
