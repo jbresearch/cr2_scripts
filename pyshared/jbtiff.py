@@ -200,7 +200,7 @@ class tiff_file():
 
    # return value aligned to word boundary (increasing as necessary)
    @staticmethod
-   def align(value, word_size=4):
+   def align(value, word_size=2):
       return ((value + word_size - 1) // word_size) * word_size
 
    # read a word of given size (in bytes), endianness, and signed/unsigned state
