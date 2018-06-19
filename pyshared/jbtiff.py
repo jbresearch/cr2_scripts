@@ -544,17 +544,14 @@ class tiff_file():
       return
 
    # determine written length of TIFF directory, including end alignment
-   def get_directory_length(self, IFD, isleaf=False):
-      # length for count and sequence of entries
-      length = 2 + len(IFD)*12
-      # length for offset at end
-      if not isleaf:
-         length += 4
+   def get_directory_length(self, IFD):
+      # length for count, sequence of entries, and offset to next IFD
+      length = 2 + len(IFD)*12 + 4
       # length of data for IFD entries
       for i, (tag, (field_type, value_count, values, value_offset)) in enumerate(sorted(IFD.iteritems())):
          # if this was a subdirectory, recurse
          if isinstance(values, dict):
-            length += self.get_directory_length(values, True)
+            length += self.get_directory_length(values)
          else:
             # check count
             assert value_count == len(values)
@@ -593,17 +590,14 @@ class tiff_file():
       return free_ptr+8, free_ptr+4
 
    # write TIFF directory, starting at given offset
-   def write_directory(self, IFD, fid, ifd_offset, isleaf=False):
+   def write_directory(self, IFD, fid, ifd_offset):
       # write number of IFD entries
       fid.seek(ifd_offset)
       entry_count = len(IFD)
       tiff_file.write_word(entry_count, fid, 2, False, self.little_endian)
       # update pointer to offset and to next free space
-      if isleaf:
-         free_ptr = tiff_file.align(ifd_offset + 2 + entry_count*12)
-      else:
-         offset_ptr = ifd_offset + 2 + entry_count*12
-         free_ptr = tiff_file.align(offset_ptr + 4)
+      offset_ptr = ifd_offset + 2 + entry_count*12
+      free_ptr = tiff_file.align(offset_ptr + 4)
       # write any subdirectories present
       for tag in [34665, 34853, 37500, 40965]: # EXIF, GPS, MakerNote, Interoperability
          if tag in IFD:
@@ -611,7 +605,7 @@ class tiff_file():
             field_type, value_count, values, value_offset = IFD[tag]
             # write subdirectory at next available space
             value_offset = free_ptr
-            free_ptr = self.write_directory(values, fid, value_offset, True)
+            sub_offset_ptr, free_ptr = self.write_directory(values, fid, value_offset)
             # update entries for this subdirectory, based on field type, to write later
             if field_type == 4:
                IFD[tag] = (field_type, value_count, [value_offset], None)
@@ -682,10 +676,7 @@ class tiff_file():
             for value in values:
                tiff_file.write_float(value, fid, 8, self.little_endian)
       # return updated pointers
-      if isleaf:
-         return free_ptr
-      else:
-         return offset_ptr, free_ptr
+      return offset_ptr, free_ptr
 
    # write data to stream
    def write(self, fid):
@@ -794,7 +785,7 @@ class tiff_file():
          # if this was a subdirectory, recurse
          if isinstance(values, dict):
             # add directory to memory map
-            length = 2+len(values)*12 # must be a leaf
+            length = 2 + len(values)*12 + 4
             mmap += tiff_file.get_memorymap_directory(values, this_item, tag)
          else:
             # data segment length
@@ -810,8 +801,8 @@ class tiff_file():
       # work through all IFDs
       for k, (IFD, ifd_offset, strips) in enumerate(self.data):
          this_ifd = "IFD#%d" % k
-         # add entry for the directory itself (not a leaf)
-         mmap.append((ifd_offset, 2+len(IFD)*12+4, this_ifd))
+         # add entry for the directory itself
+         mmap.append((ifd_offset, 2 + len(IFD)*12 + 4, this_ifd))
          # add content of IFD
          mmap += tiff_file.get_memorymap_directory(IFD, this_ifd)
          # add data strips if present
