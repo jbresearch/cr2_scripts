@@ -689,9 +689,8 @@ class tiff_file():
 
    # write data to stream
    def write(self, fid):
-      # write TIFF header
+      # write TIFF header (and CR2 header if necessary)
       ifd_ptr, offset_ptr = self.write_tiff_header(fid)
-      # write CR2 header if necessary
       ifd_ptr, cr2_offset_ptr = self.write_cr2_header(fid, ifd_ptr)
       # determine start of data space
       data_ptr = ifd_ptr
