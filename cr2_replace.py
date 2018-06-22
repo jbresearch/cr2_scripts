@@ -69,6 +69,13 @@ def main():
 
    # read sensor image file
    sensor = jbimage.image_file.read(args.sensor).squeeze()
+   # determine precision
+   precision_sensor = jbimage.get_precision(sensor.max())
+   print "Sensor image required precision: %d bits" % precision_sensor
+   # decide if we need to upgrade encoding precision
+   if precision_sensor > precision:
+      print "Upgrading from precision: %d bits" % precision
+      precision = precision_sensor
 
    # check input image parameters
    assert len(sensor.shape) == 2 # must be a one-channel image
