@@ -21,6 +21,13 @@
 import numpy as np
 from PIL import Image
 
+# determine bit depth required to hold saturation value
+
+def get_precision(saturation):
+   return int(np.ceil(np.log2(saturation)))
+
+## class to read and write PNM image files
+
 class pnm_file():
 
    @staticmethod
